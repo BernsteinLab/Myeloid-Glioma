@@ -44,7 +44,7 @@ H = np.load("cnmf_run.spectra.k_18.dt_0_015.consensus.df.npz", allow_pickle=True
 H2 = pd.DataFrame(H['data'], columns = H['columns'], index = H['index']) 
 
 ########## Load the normalized raw counts matrix of the Houston cohort (Normalized by "prepare" script ######
-X = sc.read_h5ad('/seq/epiprod02/Chadi/Glioblastoma/10X/Yun/Seurat_Object/Calculate_Usage/Calculate_Usage/cnmf_tmp/Calculate_Usage.norm_counts.h5ad')
+X = sc.read_h5ad('Calculate_Usage.norm_counts.h5ad')
 
 X2 = X.X.toarray()
 
