@@ -1,0 +1,5 @@
+In this folder, we are demonstrating the scripts used to:
+1- Align SeqWell scRNA-Seq Libraries
+2- Align 10X V3 scRNA-Seq Libraries
+3- Align 10X V2 scRNA-Seq Libraries
+4- Processing Counts Matrices to obtain clusters and generate UMAPs
