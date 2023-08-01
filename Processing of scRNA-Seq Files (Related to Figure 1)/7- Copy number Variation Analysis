@@ -1,0 +1,18 @@
+        inferCNV.R \
+        --raw_counts_matrix Input_Matrix.txt \
+        --annotations_file Annotation_File.txt \
+        --gene_order_file GRCh38-2020-A_gen_pos.txt \
+        --num_threads 16 \
+        --out_dir infercnv_Output \
+        --denoise --HMM --cluster_by_groups --cutoff 0.1 \
+
+
+      ######## We selected a group of reference cells which are not annotated as any of the malignant programs from various tumors (i.e. a mix of Myeloid, Tcells, Oligos and Vasculature Cells)
+      ######## We extracted and merged the raw counts of these reference cells into a single matrix.
+      ######## In the annotation file, we included the reference cells and annotated the cells of each tumor
+      ######## We merged the raw matrix of each tumor with the raw matrix of the reference cells
+      ######## Gene order file was constructed using "gtf_to_position_file.py" script provided by infercnv package
+
+      ######## gtf_to_position_file.py genes.gtf GRCh38-2020-A_gen_pos.txt
+
+      ######## To obtain CNV values for each cell, use the "add_to_seurat("./infercnv_Output/", seurat_obj = NULL)" ######
