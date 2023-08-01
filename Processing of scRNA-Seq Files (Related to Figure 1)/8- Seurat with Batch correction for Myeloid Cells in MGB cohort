@@ -1,0 +1,248 @@
+library(dplyr)
+library(Seurat)
+options(bitmapType='cairo')
+options(future.globals.maxSize = 8000 * 1024^2)
+
+########## We extracted the non-doublet myeloid cells in MGB cohort and created a matrix for the myeloid cells in each patient #######
+
+BWH10_WT.data <- read.table("BWH10_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+BWH10_WT <- CreateSeuratObject(counts = BWH10_WT.data, project = "BWH10_WT", min.cells = 3, min.features = 200)
+BWH10_WT[["percent.mt"]] <- PercentageFeatureSet(BWH10_WT, pattern = "^MT.")
+
+BWH11_WT.data <- read.table("BWH11_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+BWH11_WT <- CreateSeuratObject(counts = BWH11_WT.data, project = "BWH11_WT", min.cells = 3, min.features = 200)
+BWH11_WT[["percent.mt"]] <- PercentageFeatureSet(BWH11_WT, pattern = "^MT.")
+
+BWH27_WT.data <- read.table("BWH27_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+BWH27_WT <- CreateSeuratObject(counts = BWH27_WT.data, project = "BWH27_WT", min.cells = 3, min.features = 200)
+BWH27_WT[["percent.mt"]] <- PercentageFeatureSet(BWH27_WT, pattern = "^MT.")
+
+MGH112_WT.data <- read.table("MGH112_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH112_WT <- CreateSeuratObject(counts = MGH112_WT.data, project = "MGH112_WT", min.cells = 3, min.features = 200)
+MGH112_WT[["percent.mt"]] <- PercentageFeatureSet(MGH112_WT, pattern = "^MT.")
+
+MGH1202_WT.data <- read.table("MGH1202_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH1202_WT <- CreateSeuratObject(counts = MGH1202_WT.data, project = "MGH1202_WT", min.cells = 3, min.features = 200)
+MGH1202_WT[["percent.mt"]] <- PercentageFeatureSet(MGH1202_WT, pattern = "^MT.")
+
+
+MGH235_WT.data <- read.table("MGH235_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH235_WT <- CreateSeuratObject(counts = MGH235_WT.data, project = "MGH235_WT", min.cells = 3, min.features = 200)
+MGH235_WT[["percent.mt"]] <- PercentageFeatureSet(MGH235_WT, pattern = "^MT.")
+
+
+MGH237_WT.data <- read.table("MGH237_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH237_WT <- CreateSeuratObject(counts = MGH237_WT.data, project = "MGH237_WT", min.cells = 3, min.features = 200)
+MGH237_WT[["percent.mt"]] <- PercentageFeatureSet(MGH237_WT, pattern = "^MT.")
+
+
+MGH245_WT.data <- read.table("MGH245_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH245_WT <- CreateSeuratObject(counts = MGH245_WT.data, project = "MGH245_WT", min.cells = 3, min.features = 200)
+MGH245_WT[["percent.mt"]] <- PercentageFeatureSet(MGH245_WT, pattern = "^MT.")
+
+
+MGH252_WT.data <- read.table("MGH252_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH252_WT <- CreateSeuratObject(counts = MGH252_WT.data, project = "MGH252_WT", min.cells = 3, min.features = 200)
+MGH252_WT[["percent.mt"]] <- PercentageFeatureSet(MGH252_WT, pattern = "^MT.")
+
+
+MGH826_WT.data <- read.table("MGH826_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH826_WT <- CreateSeuratObject(counts = MGH826_WT.data, project = "MGH826_WT", min.cells = 3, min.features = 200)
+MGH826_WT[["percent.mt"]] <- PercentageFeatureSet(MGH826_WT, pattern = "^MT.")
+
+MGH253_WT.data <- read.table("MGH253_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH253_WT <- CreateSeuratObject(counts = MGH253_WT.data, project = "MGH253_WT", min.cells = 3, min.features = 200)
+MGH253_WT[["percent.mt"]] <- PercentageFeatureSet(MGH253_WT, pattern = "^MT.")
+
+MGH922_WT.data <- read.table("MGH922_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH922_WT <- CreateSeuratObject(counts = MGH922_WT.data, project = "MGH922_WT", min.cells = 3, min.features = 200)
+MGH922_WT[["percent.mt"]] <- PercentageFeatureSet(MGH922_WT, pattern = "^MT.")
+
+MGH720_WT.data <- read.table("MGH720_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH720_WT <- CreateSeuratObject(counts = MGH720_WT.data, project = "MGH720_WT", min.cells = 3, min.features = 200)
+MGH720_WT[["percent.mt"]] <- PercentageFeatureSet(MGH720_WT, pattern = "^MT.")
+
+MGH915_WT.data <- read.table("MGH915_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH915_WT <- CreateSeuratObject(counts = MGH915_WT.data, project = "MGH915_WT", min.cells = 3, min.features = 200)
+MGH915_WT[["percent.mt"]] <- PercentageFeatureSet(MGH915_WT, pattern = "^MT.")
+
+MGH240_Mutant.data <- read.table("MGH240_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH240_Mutant <- CreateSeuratObject(counts = MGH240_Mutant.data, project = "MGH240_Mutant", min.cells = 3, min.features = 200)
+MGH240_Mutant[["percent.mt"]] <- PercentageFeatureSet(MGH240_Mutant, pattern = "^MT.")
+
+MGH303_Mutant.data <- read.table("MGH303_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH303_Mutant <- CreateSeuratObject(counts = MGH303_Mutant.data, project = "MGH303_Mutant", min.cells = 3, min.features = 200)
+MGH303_Mutant[["percent.mt"]] <- PercentageFeatureSet(MGH303_Mutant, pattern = "^MT.")
+
+MGH729_Mutant.data <- read.table("MGH729_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH729_Mutant <- CreateSeuratObject(counts = MGH729_Mutant.data, project = "MGH729_Mutant", min.cells = 3, min.features = 200)
+MGH729_Mutant[["percent.mt"]] <- PercentageFeatureSet(MGH729_Mutant, pattern = "^MT.")
+
+MGH803_Mutant.data <- read.table("MGH803_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH803_Mutant <- CreateSeuratObject(counts = MGH803_Mutant.data, project = "MGH803_Mutant", min.cells = 3, min.features = 200)
+MGH803_Mutant[["percent.mt"]] <- PercentageFeatureSet(MGH803_Mutant, pattern = "^MT.")
+
+MGH256_Mutant.data <- read.table("MGH256_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH256_Mutant <- CreateSeuratObject(counts = MGH256_Mutant.data, project = "MGH256_Mutant", min.cells = 3, min.features = 200)
+MGH256_Mutant[["percent.mt"]] <- PercentageFeatureSet(MGH256_Mutant, pattern = "^MT.")
+
+MGH250_Mutant.data <- read.table("MGH250_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH250_Mutant <- CreateSeuratObject(counts = MGH250_Mutant.data, project = "MGH250_Mutant", min.cells = 3, min.features = 200)
+MGH250_Mutant[["percent.mt"]] <- PercentageFeatureSet(MGH250_Mutant, pattern = "^MT.")
+
+BWH14_Mutant.data <- read.table("BWH14_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+BWH14_Mutant <- CreateSeuratObject(counts = BWH14_Mutant.data, project = "BWH14_Mutant", min.cells = 3, min.features = 200)
+BWH14_Mutant[["percent.mt"]] <- PercentageFeatureSet(BWH14_Mutant, pattern = "^MT.")
+
+MGH627_WT.data <- read.table("MGH627_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH627_WT <- CreateSeuratObject(counts = MGH627_WT.data, project = "MGH627_WT", min.cells = 3, min.features = 200)
+MGH627_WT[["percent.mt"]] <- PercentageFeatureSet(MGH627_WT, pattern = "^MT.")
+
+
+######### Normalization #########
+
+BWH10_WT <- NormalizeData(BWH10_WT)
+BWH11_WT <- NormalizeData(BWH11_WT)
+BWH27_WT <- NormalizeData(BWH27_WT)
+MGH112_WT <- NormalizeData(MGH112_WT)
+MGH1202_WT <- NormalizeData(MGH1202_WT)
+MGH235_WT <- NormalizeData(MGH235_WT)
+MGH237_WT <- NormalizeData(MGH237_WT)
+MGH245_WT <- NormalizeData(MGH245_WT)
+MGH252_WT <- NormalizeData(MGH252_WT)
+MGH826_WT <- NormalizeData(MGH826_WT)
+MGH922_WT <- NormalizeData(MGH922_WT)
+MGH253_WT <- NormalizeData(MGH253_WT)
+MGH720_WT <- NormalizeData(MGH720_WT)
+MGH915_WT <- NormalizeData(MGH915_WT)
+MGH240_Mutant <- NormalizeData(MGH240_Mutant)
+MGH303_Mutant <- NormalizeData(MGH303_Mutant)
+MGH729_Mutant <- NormalizeData(MGH729_Mutant)
+MGH803_Mutant <- NormalizeData(MGH803_Mutant)
+MGH256_Mutant <- NormalizeData(MGH256_Mutant)
+MGH250_Mutant <- NormalizeData(MGH250_Mutant)
+BWH14_Mutant <- NormalizeData(BWH14_Mutant)
+MGH627_WT <- NormalizeData(MGH627_WT)
+
+
+########## Identifying Variable Genes ###########
+
+BWH10_WT <- FindVariableFeatures(BWH10_WT, selection.method="vst", nfeatures = 2000)
+BWH11_WT <- FindVariableFeatures(BWH11_WT, selection.method="vst", nfeatures = 2000)
+BWH27_WT <- FindVariableFeatures(BWH27_WT, selection.method="vst", nfeatures = 2000)
+MGH112_WT <- FindVariableFeatures(MGH112_WT, selection.method="vst", nfeatures = 2000)
+MGH1202_WT <- FindVariableFeatures(MGH1202_WT, selection.method="vst", nfeatures = 2000)
+MGH235_WT <- FindVariableFeatures(MGH235_WT, selection.method="vst", nfeatures = 2000)
+MGH237_WT <- FindVariableFeatures(MGH237_WT, selection.method="vst", nfeatures = 2000)
+MGH245_WT <- FindVariableFeatures(MGH245_WT, selection.method="vst", nfeatures = 2000)
+MGH252_WT <- FindVariableFeatures(MGH252_WT, selection.method="vst", nfeatures = 2000)
+MGH826_WT <- FindVariableFeatures(MGH826_WT, selection.method="vst", nfeatures = 2000)
+MGH253_WT <- FindVariableFeatures(MGH253_WT, selection.method="vst", nfeatures = 2000)
+MGH922_WT <- FindVariableFeatures(MGH922_WT, selection.method="vst", nfeatures = 2000)
+MGH720_WT <- FindVariableFeatures(MGH720_WT, selection.method="vst", nfeatures = 2000)
+MGH915_WT <- FindVariableFeatures(MGH915_WT, selection.method="vst", nfeatures = 2000)
+MGH240_Mutant <- FindVariableFeatures(MGH240_Mutant, selection.method="vst", nfeatures = 2000)
+MGH303_Mutant <- FindVariableFeatures(MGH303_Mutant, selection.method="vst", nfeatures = 2000)
+MGH729_Mutant <- FindVariableFeatures(MGH729_Mutant, selection.method="vst", nfeatures = 2000)
+MGH803_Mutant <- FindVariableFeatures(MGH803_Mutant, selection.method="vst", nfeatures = 2000)
+MGH256_Mutant <- FindVariableFeatures(MGH256_Mutant, selection.method="vst", nfeatures = 2000)
+MGH250_Mutant <- FindVariableFeatures(MGH250_Mutant, selection.method="vst", nfeatures = 2000)
+BWH14_Mutant <- FindVariableFeatures(BWH14_Mutant, selection.method="vst", nfeatures = 2000)
+MGH627_WT <- FindVariableFeatures(MGH627_WT, selection.method="vst", nfeatures = 2000)
+
+
+########### Identifying genes found in every myeloid cell matrix #########
+
+var3 <- intersect(rownames(MGH112_WT), rownames(MGH235_WT))
+
+var4 <- intersect(var3, rownames(MGH237_WT))
+
+var5 <- intersect(var4, rownames(MGH245_WT))
+
+var8 <- intersect(var5, rownames(MGH826_WT))
+
+var9 <- intersect(var8, rownames(BWH10_WT))
+
+var10 <- intersect(var9, rownames(BWH11_WT))
+
+var11 <- intersect(var10, rownames(BWH27_WT))
+
+var12 <- intersect(var11, rownames(MGH1202_WT))
+
+var13 <- intersect(var12, rownames(MGH252_WT))
+
+var14 <- intersect(var13, rownames(MGH922_WT))
+
+var15 <- intersect(var14, rownames(MGH720_WT))
+
+var16 <- intersect(var15, rownames(MGH915_WT))
+
+var17 <- intersect(var16, rownames(MGH240_Mutant))
+
+var18 <- intersect(var17, rownames(MGH303_Mutant))
+
+var19 <- intersect(var18, rownames(MGH729_Mutant))
+
+var20 <- intersect(var19, rownames(MGH803_Mutant))
+
+var21 <- intersect(var20, rownames(MGH256_Mutant))
+
+var22 <- intersect(var21, rownames(MGH250_Mutant))
+
+var23 <- intersect(var22, rownames(BWH14_Mutant))
+
+var24 <- intersect(var23, rownames(MGH627_WT))
+
+all.genes <- intersect(var24, rownames(MGH253_WT))
+
+########## Batch Correction ###########
+
+Myeloid.list <-  list(MGH112_WT, MGH235_WT, MGH237_WT, MGH245_WT, MGH826_WT, BWH10_WT, BWH11_WT, BWH27_WT, MGH1202_WT, MGH252_WT, MGH253_WT, MGH922_WT, MGH720_WT, MGH915_WT, MGH240_Mutant, MGH303_Mutant, MGH729_Mutant, MGH803_Mutant, MGH256_Mutant, MGH250_Mutant, BWH14_Mutant, MGH627_WT)
+
+Myeloid.anchors2 <- FindIntegrationAnchors(object.list = Myeloid.list, dims = 1:30, k.filter = 30)
+
+Myeloid.combined <- IntegrateData(anchorset = Myeloid.anchors2, dims = 1:30, features.to.integrate = all.genes)
+
+library(ggplot2)
+library(cowplot)
+
+######## PCA ##########
+DefaultAssay(Myeloid.combined) <- "integrated"
+Myeloid.combined <- ScaleData(Myeloid.combined, verbose=TRUE)
+Myeloid.combined <- RunPCA(Myeloid.combined, verbose=TRUE, npcs = 30)
+pdf("Elbow_Plot_Integrated.pdf", height= 6, width = 6)
+ElbowPlot(Myeloid.combined, ndims=30)
+dev.off()
+
+write.table(Myeloid.combined@meta.data, file="Integrated_MetaData.txt", sep="\t", col.names=NA, quote=FALSE)
+
+######### Louvain Clustering and UMAP generation #########
+
+Myeloid.combined <- RunUMAP(Myeloid.combined, reduction = "pca", dims = 1:8)
+Myeloid.combined <- FindNeighbors(Myeloid.combined, dims = 1:8)
+Myeloid.combined <- FindClusters(Myeloid.combined, resolution = 0.3)
+pdf("SeqWell_WT_Mutant_Myeloid_UMAP_Clusters.pdf", height= 6, width = 7)
+DimPlot(Myeloid.combined, reduction = "umap")
+dev.off()
+
+pdf("SeqWell_WT_Mutant_Myeloid_Clusters_With_Labels.pdf", height= 6, width = 7)
+DimPlot(Myeloid.combined, reduction = "umap", label=TRUE)
+dev.off()
+
+pdf("SeqWell_WT_Mutant_Myeloid_UMAP_Patient_ID.pdf", height= 6, width = 9)
+DimPlot(Myeloid.combined, reduction = "umap", group.by="orig.ident")
+dev.off()
+
+############# Differential Gene Expression #############
+
+DefaultAssay(Myeloid.combined) <- "RNA"
+Myeloid.combined <- NormalizeData(Myeloid.combined)
+Myeloid.combined <- ScaleData(Myeloid.combined, features = all.genes)
+tumor.markers <- FindAllMarkers(Myeloid.combined, only.pos = TRUE, logfc.threshold=0.25, test.use= "roc")
+write.table(tumor.markers, file="SeqWell_WT_Mutant_Myeloid_Clusters_AUC.txt", sep="\t", col.names=NA, quote=FALSE)
+
+tumor.markers.DGE <- FindAllMarkers(Myeloid.combined, only.pos = TRUE, logfc.threshold=0.25)
+write.table(tumor.markers.DGE, file="SeqWell_WT_Mutant_Myeloid_Clusters_DGE.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+write.table(Myeloid.combined@meta.data, file="SeqWell_WT_Mutant_Myeloid_Integrated_MetaData.txt", sep="\t", col.names=NA, quote=FALSE)
