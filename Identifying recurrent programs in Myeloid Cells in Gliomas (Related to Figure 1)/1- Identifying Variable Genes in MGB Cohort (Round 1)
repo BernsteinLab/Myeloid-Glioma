@@ -51,6 +51,6 @@ All_Matrix4 <- Myeloid[rownames(Myeloid) %in% Var2,]
 
 All_Matrix5 <- t(All_Matrix4)
 
-write.table(All_Matrix5, file="MGB_10X_Myeloid_Matrix_Filtered_For_NMF_Round1.txt", sep="\t", quote=FALSE, col.names=NA)
+write.table(All_Matrix5, file="MGB_Myeloid_Matrix_Filtered_For_NMF_Round1.txt", sep="\t", quote=FALSE, col.names=NA)
 
 
