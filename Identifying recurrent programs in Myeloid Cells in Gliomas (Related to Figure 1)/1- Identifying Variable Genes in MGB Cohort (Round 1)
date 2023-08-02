@@ -39,7 +39,7 @@ All <- FindVariableFeatures(All, selection.method="vst", nfeatures = 2000)
 
 Var <- HVFInfo(object = All, selection.method="vst", assay = "RNA")
 
-write.table(Var, file="Verhaak_Myeloid_Full_Gene_List_Variable_Score_230206.txt", sep="\t", quote=FALSE, col.names=NA)
+write.table(Var, file="MGB_Myeloid_Full_Gene_List_Variable_Score_230206.txt", sep="\t", quote=FALSE, col.names=NA)
 
 
 ####Identify variable Genes from Var (min 0.001 mean expression then top 2000 variance standardized) and then place the genes in a list ########
