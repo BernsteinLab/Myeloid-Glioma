@@ -1,0 +1,20 @@
+######### The input matrix include only genes identified in Step 7 ########
+
+cnmf prepare --output-dir ./All/ --name All -c Jackson_Myeloid_Matrix_Filtered_For_NMF_Round2.txt -k 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 --n-iter 500 --total-workers 1 --seed 14 --numgenes 2276
+
+cnmf factorize --output-dir ./All/ --name All --worker-index 0;
+
+cnmf combine --output-dir ./All/ --name All;
+
+rm ./All/All/cnmf_tmp/All.spectra.k_*.iter_*.df.npz;
+
+cnmf k_selection_plot --output-dir All --name All;
+
+
+##### Based on the K plot, we select K=18 ########
+
+cnmf consensus --output-dir All --name All --components 18 --local-density-threshold 0.02 --show-clustering
+
+
+########## The cnmf consensus script outputs usage matrix which is normalized per row to percentages (in each cell, the usages of the programs sums up to 100) ################
+########## The gene spectra score matrix is used for the annotation of the programs #############
