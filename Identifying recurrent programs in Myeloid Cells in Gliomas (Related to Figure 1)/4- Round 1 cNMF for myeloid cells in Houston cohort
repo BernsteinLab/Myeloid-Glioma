@@ -1,4 +1,4 @@
-cnmf prepare --output-dir ./All/ --name All -c Houston_Myeloid_Matrix_Filtered_For_NMF_Round1.txt -k 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 --n-iter 500 --total-workers 1 --seed 14 --numgenes 4000
+cnmf prepare --output-dir ./All/ --name All -c Houston_Myeloid_Matrix_Filtered_For_NMF_Round1.txt -k 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 --n-iter 500 --total-workers 1 --seed 14 --numgenes 2000
 
 cnmf factorize --output-dir ./All/ --name All --worker-index 0;
 
