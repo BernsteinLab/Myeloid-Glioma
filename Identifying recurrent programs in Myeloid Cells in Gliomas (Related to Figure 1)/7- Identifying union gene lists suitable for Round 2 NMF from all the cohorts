@@ -1,0 +1,99 @@
+library(dplyr)
+library(Seurat)
+options(bitmapType='cairo')
+options(future.globals.maxSize = 8000 * 1024^2)
+
+##### Filtering MGB cohort matrix to include myeloid cells cleaned using Round 1 cNMF ##################
+
+MGB <- read.table("All_MGB_220818_Raw_Expression.txt", sep="\t", head=TRUE, row.names=1)
+
+Myeloid4 <- scan("HQ_Myeloid_MGB.txt", what="")
+
+MGB2 <- MGB[,colnames(MGB) %in% Myeloid4]
+
+
+##### Filtering Jackson's cohort matrix to include myeloid cells cleaned using Round 1 cNMF ##################
+
+Jackson <- read.table("Jackson_All_Tumors_Raw_Expression.txt", sep="\t", head=TRUE, row.names=1)
+
+Myeloid2 <- scan("HQ_Myeloid_Jackson.txt", what="")
+
+Jackson2 <- Jackson[,colnames(Jackson) %in% Myeloid2]
+
+
+##### Filtering Houston's cohort matrix to include myeloid cells cleaned using Round 1 cNMF ##################
+
+Houston <- read.table("All_Houston_220826_Raw_Expression.txt", sep="\t", head=TRUE, row.names=1)
+
+Myeloid3 <- scan("HQ_Myeloid_Houston.txt", what="")
+
+Houston2 <- Houston[,colnames(Houston) %in% Myeloid3]
+
+
+######### Creating Seurat object for each cohort and merging the objects to create one ##########
+
+MGB_Object <- CreateSeuratObject(counts = MGB2, project = "MGB", min.cells = 3, min.features = 200)
+
+MGB_Object[["percent.mt"]] <- PercentageFeatureSet(MGB_Object, pattern = "^MT.")
+
+
+Jackson_Object <- CreateSeuratObject(counts = Jackson2, project = "Jackson", min.cells = 3, min.features = 200)
+
+Jackson_Object[["percent.mt"]] <- PercentageFeatureSet(Jackson_Object, pattern = "^MT.")
+
+
+Houston_Object <- CreateSeuratObject(counts = Houston2, project = "Houston", min.cells = 3, min.features = 200)
+
+Houston_Object[["percent.mt"]] <- PercentageFeatureSet(Houston_Object, pattern = "^MT.")
+
+
+Myeloid <-  merge(MGB_Object, y = c(Jackson_Object, Houston_Object), add.cell.ids = c("MGB", "Jackson", "Houston"))
+
+all.genes <- rownames(Myeloid)
+
+
+######### Normalization and identifying variable genes  suitable for Round 2 cNMF for each cohort #############$
+
+
+DefaultAssay(Myeloid) <- "RNA"
+Myeloid <- NormalizeData(Myeloid)
+
+Myeloid <- FindVariableFeatures(Myeloid, selection.method="vst", nfeatures = 2000)
+
+Var <- HVFInfo(object = Myeloid, selection.method="vst", assay = "RNA")
+
+write.table(Var, file="Combined_Myeloid_Full_Gene_List_Variable_Score_Union_Based.txt", sep="\t", quote=FALSE, col.names=NA)
+
+all.genes <- rownames(Myeloid)
+Myeloid <- ScaleData(Myeloid, features = all.genes)
+
+
+write.table(Myeloid@meta.data, file="Glioma_Combined_Myeloid_TAM_All_MetaData_Union_Based.txt", sep="\t", col.names=NA, quote=FALSE)
+
+DefaultAssay(Myeloid) <- "RNA"
+
+Myeloid.data <- GetAssayData(object = Myeloid, slot="counts")
+
+
+#################### Got the union filtered variable by minimum expression of 0.01 in the Combined_Myeloid_Full_Gene_List_Variable_Score_Union_Based.txt and minimum variance standardized of 1 ################################
+
+Variable <- scan("union_filtered_Variable.txt", what="")
+
+
+
+
+#################### Filter the cleaned myeloid matrix of each cohort to include only these genes of interest for Round 2 cNMF for each cohort #############
+
+MGB3 <- MGB[rownames(MGB) %in% Variable,colnames(MGB) %in% Myeloid4]
+
+write.table(t(MGB3), file="MGB_Myeloid_Matrix_Filtered_For_NMF_Round2.txt", sep="\t", quote=FALSE, col.names=NA)
+
+
+Houston3 <- Houston[rownames(Houston) %in% Variable,colnames(Houston) %in% Myeloid3]
+
+write.table(t(Houston3), file="Houston_Myeloid_Matrix_Filtered_For_NMF_Round2.txt", sep="\t", quote=FALSE, col.names=NA)
+
+
+Jackson3 <- Jackson[rownames(Jackson) %in% Variable,colnames(Jackson) %in% Myeloid2]
+
+write.table(t(Jackson3), file="Jackson_Myeloid_Matrix_Filtered_For_NMF_Round2.txt", sep="\t", quote=FALSE, col.names=NA)
