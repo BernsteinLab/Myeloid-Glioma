@@ -9,7 +9,7 @@ rm ./All/All/cnmf_tmp/All.spectra.k_*.iter_*.df.npz;
 cnmf k_selection_plot --output-dir All --name All;
 
 
-##### Based on the K plot, we select K=18 ########
+##### Based on the K plot, we select K=22 ########
 
 cnmf consensus --output-dir All --name All --components 22 --local-density-threshold 0.02 --show-clustering
 
