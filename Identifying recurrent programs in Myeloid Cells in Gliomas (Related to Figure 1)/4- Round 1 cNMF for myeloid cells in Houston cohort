@@ -1,4 +1,4 @@
-cnmf prepare --output-dir ./All/ --name All -c MGB_Myeloid_Matrix_Filtered_For_NMF_Round2.txt -k 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 --n-iter 500 --total-workers 1 --seed 14 --numgenes 4000
+cnmf prepare --output-dir ./All/ --name All -c Houston_Myeloid_Matrix_Filtered_For_NMF_Round1.txt -k 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 --n-iter 500 --total-workers 1 --seed 14 --numgenes 4000
 
 cnmf factorize --output-dir ./All/ --name All --worker-index 0;
 
@@ -9,9 +9,9 @@ rm ./All/All/cnmf_tmp/All.spectra.k_*.iter_*.df.npz;
 cnmf k_selection_plot --output-dir All --name All;
 
 
-##### Based on the K plot, we select K=18 ########
+##### Based on the K plot, we select K=23 ########
 
-cnmf consensus --output-dir All --name All --components 22 --local-density-threshold 0.02 --show-clustering
+cnmf consensus --output-dir All --name All --components 23 --local-density-threshold 0.02 --show-clustering
 
 
 ########## The cnmf consensus script outputs usage matrix which is normalized per row to percentages (in each cell, the usages of the programs sums up to 100) ################
