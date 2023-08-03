@@ -1,0 +1,18 @@
+######## "matrix_piedot.txt" contains all non-doublet myeloid cells. 
+########  Xaxis is calculated by subtracting the usage of Complement Immunosuppression from the usage of IL1B pro-inflammatory ( Usage of IL1B Inflam - Usage of Complement )
+########  Yaxis is calculated by subtracting the usage of Scavenger Immunosuppression from the usage of RHOB pro-inflammatory ( Usage of RHOB Inflammatory - Usage of Scavenger )
+######## The matrix contains info about the usage of each immunomodulatory program and the percentage of all other remaining programs (including identities as "Others" category summed together) 
+
+library(ggplot2)
+library(dplyr)
+library(scatterpie)
+library(Cairo)
+
+
+data <- read.table("matrix_piedot.txt", sep="\t", head=TRUE, row.names=1)
+
+
+my_plot <- ggplot() + geom_scatterpie(aes(x=Xaxis, y=Yaxis, r=0.5), data=data, cols=c("Others","Scavenger_Immunosuppressive","IL1B_Inflammatory","Inflammatory_microglia", "Complement_Immunosuppressive"), color=NA) + coord_equal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + labs(color=NULL) + scale_fill_manual(values = c("Others" = "gray90", "IL1B_Inflammatory" = "#AB0800", "Complement_Immunosuppressive"="#007AFF", "Inflammatory_microglia"="#FF6961", "Scavenger_Immunosuppressive" = "#0700C4"))
+
+
+ggsave(file="Myeloid_Activities_Scatterpie_Full_Version_V2_OtherInident_05.png", plot = my_plot, height = 8, width = 10, dpi=400)
