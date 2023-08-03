@@ -1,0 +1,118 @@
+######## "matrix_piedot.txt" contains all non-doublet myeloid cells. 
+########  Xaxis is calculated by subtracting the usage of Complement Immunosuppression from the usage of IL1B pro-inflammatory ( Usage of IL1B Inflam - Usage of Complement )
+########  Yaxis is calculated by subtracting the usage of Scavenger Immunosuppression from the usage of RHOB pro-inflammatory ( Usage of RHOB Inflammatory - Usage of Scavenger )
+######## The matrix contains info about the usage of each immunomodulatory program and the percentage of all other remaining programs (including identities as "Others" category summed together) 
+######## The matrix contains info about the cohort and the identity of each cell (Defined as described earlier for the heatmap)
+
+library(ggplot2)
+library(dplyr)
+library(scatterpie)
+
+data4 <- read.table("matrix_piedot.txt", sep="\t", head=TRUE, row.names=1)
+
+plot(data4$Xaxis, y=data4$Yaxis, pch=19, cex=0.5)
+
+
+######## Generate a Quadrant plot for demonstrating the usage of IL1B pro-inflammatory program
+
+pdf("IL1B_Inflammatory_Quadrant_V7_Blackgrey.pdf", height = 6, width = 7.5)
+
+ggplot(data4 %>% arrange(IL1B_Inflammatory), aes(Xaxis, Yaxis)) + geom_point(aes(colour = IL1B_Inflammatory), size=0.05) + scale_color_gradient2(low="grey90", mid="grey90", high="black", midpoint = 20, space="Lab", limit=c(0,50), na.value="black") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + labs(color=NULL)
+
+dev.off()
+
+
+######## Generate a Quadrant plot for demonstrating the usage of RHOB pro-inflammatory program
+
+pdf("Inflammatory_microglia_Quadrant_V7_Blackgrey.pdf", height = 6, width = 7.5)
+
+ggplot(data4 %>% arrange(Inflammatory_microglia), aes(Xaxis, Yaxis)) + geom_point(aes(colour = Inflammatory_microglia), size=0.05) + scale_color_gradient2(low="grey90", mid="grey90", high="black", midpoint = 20, space="Lab", limit=c(0,50), na.value="black") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + labs(color=NULL)
+
+dev.off()
+
+
+######## Generate a Quadrant plot for demonstrating the usage of Complement Immunosuppressive program
+
+
+pdf("Complement_Immunosuppressive_Quadrant_V7_Blackgrey.pdf", height = 6, width = 7.5)
+
+ggplot(data4 %>% arrange(Complement_Immunosuppressive), aes(Xaxis, Yaxis)) + geom_point(aes(colour = Complement_Immunosuppressive), size=0.05) + scale_color_gradient2(low="grey90", mid="grey90", high="black", midpoint = 0, space="Lab", limit=c(0,50), na.value="black") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + labs(color=NULL)
+
+dev.off()
+
+
+######## Generate a Quadrant plot for demonstrating the usage of Scavenger Immunosuppressive program
+
+pdf("Scavenger_Immunosuppressive_Quadrant_V7_Blackgrey.pdf", height = 6, width = 7.5)
+
+ggplot(data4 %>% arrange(Scavenger_Immunosuppressive), aes(Xaxis, Yaxis)) + geom_point(aes(colour = Scavenger_Immunosuppressive), size=0.05) + scale_color_gradient2(low="grey90", mid="grey90", high="black", midpoint = 20, space="Lab", limit=c(0,50), na.value="black") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + labs(color=NULL)
+
+dev.off()
+
+
+##### Reshuffle the plots #######
+
+data5 <- data4[sample(nrow(data4)), ]
+
+
+######## Generate a Quadrant plot for Microglia
+
+pdf("Microglia_Quadrant_V5.pdf", height = 6, width = 7.5)
+
+ggplot(data5, aes(Xaxis, Yaxis)) + geom_point(aes(colour = Microglias), size=0.05) + scale_color_manual(values=c(Others="gray90", Microglia="#008000")) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + labs(color=NULL)
+
+dev.off()
+
+
+######## Generate a Quadrant plot for Neutrophils
+
+pdf("Neutrophils_Quadrant_V5.pdf", height = 6, width = 7.5)
+
+ggplot(data5, aes(Xaxis, Yaxis)) + geom_point(aes(colour = Neutrophils), size=0.05) + scale_color_manual(values=c(Others="gray90",  Neutrophil="#000000")) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + labs(color=NULL)
+
+dev.off()
+
+
+######## Generate a Quadrant plot for Monocytes
+
+pdf("Monocytes_Quadrant_V5.pdf", height = 6, width = 7.5)
+
+ggplot(data5, aes(Xaxis, Yaxis)) + geom_point(aes(colour = Monocytess), size=0.05) + scale_color_manual(values=c(Others="gray90", Monocyte = "#FFFF00")) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + labs(color=NULL)
+
+dev.off()
+
+
+######## Generate a Quadrant plot for Macrophages
+
+pdf("Macrophages_Quadrant_V5.pdf", height = 6, width = 7.5)
+
+ggplot(data5, aes(Xaxis, Yaxis)) + geom_point(aes(colour = GPNMB.Macrophages), size=0.05) + scale_color_manual(values=c(Others="gray90", "GPNMB Macrophage"="#7F00FF")) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + labs(color=NULL)
+
+dev.off()
+
+
+
+######## Generate a Quadrant plot for cDCs
+
+pdf("cDCs_Quadrant_V5.pdf", height = 6, width = 7.5)
+
+ggplot(data5, aes(Xaxis, Yaxis)) + geom_point(aes(colour = cDCs), size=0.05) + scale_color_manual(values=c("Others"="gray90", "cDC"="#FF8000")) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + labs(color=NULL)
+
+dev.off()
+
+
+
+
+######## Generate a Quadrant plot for Cohort
+
+pdf("cDCs_Quadrant_V5.pdf", height = 6, width = 7.5)
+
+ggplot(data5, aes(Xaxis, Yaxis)) + geom_point(aes(colour = Cohort), size=0.05) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + labs(color=NULL)
+
+dev.off()
+
+
+
+
+
+
