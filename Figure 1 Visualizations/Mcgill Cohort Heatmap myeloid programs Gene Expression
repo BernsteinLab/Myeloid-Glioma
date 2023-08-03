@@ -1,0 +1,343 @@
+######## Obtain the normalized gene expression matrix of non-doublet myeloid cells in Mcgill cohort: ########
+############## Filter the Mcgill Cohort Matrix to include only non-doublet myeloid cells and genes that were used for Round 2 cNMF in the discovery cohorts #######
+
+
+######## Selected the genes to include in the heatmap by using the top 100 genes for each program and then selecting the top 20 genes in terms of frequency of expression #######
+
+######## To classify the myeloid cells in the heatmap we used the following usage thresholds:
+
+######## Microglia - Minimum 10% usage of microglia program and other identity programs are all below the usage value of the microglia program (macrophages must be below 10%).
+
+######## Microglia-Like - Minimum 10% usage of microglia and 10% usage of monocytes program. Other identity programs are below the usage value of these two programs (Otherwise it is assigned as a microglia). 
+
+######## Macrophages - Minimum 10% usage of macrophage program and other identity programs are all below the usage value of the macrophage program (monocyte below 10%).
+
+######## Mono_Macro - Minimum 10% usage of macrophages and 10% usage of monocytes program. Other identity programs are below the usage value of these two programs. 
+
+######## Monocytes - Minimum 10% usage of macrophage program and other identity programs are all below the usage value of the monocytes program.
+
+######## cDC - Minimum 10% usage of the cDCs program and other identity programs are all below the usage value of the cDCs program.
+
+######## Neutrophils - Minimum 10% usage of the Neutrophils program and other identity programs are all below the usage value of the Neutrophils program.
+
+######## Activity Dominated - All identity programs are below 10% usage.
+
+######## Each classification had a list txt file in which the barcodes are listed accordingly (one barcode per row)
+
+######## We created a gene order file in which the top 20 genes for each NMF program are ordered together (We disable row clustering for heatmaps generation #####
+
+R;
+
+##################################Inside R############################
+
+###### Load libraries and required inputs #########
+###### "Mcgill_Meta.txt" contains two columns, one column is the barcode and the second column is the identity assigned to the barcode based on above. The metadata text files contains additional columns corresponding to IDH mutation status and tumor status ######
+###### "Tumors.combined" is the seurat object of all Mcgill cohort cells.
+
+library(ComplexHeatmap)
+library(circlize)
+library(dplyr)
+library(Seurat)
+options(bitmapType='cairo')
+library(Matrix)
+library(bigmemory)
+library(slam)
+
+###### Obtain normalized expression values of non-doublet myeloid cells, scaling and ceiling of non-doublet myeloid cells and filter to include only selected genes in order ######
+
+Matrix2 <- GetAssayData(Tumors.combined, slot = "data")
+
+Meta <- read.table("Mcgill_Meta.txt", row.names=1, head=TRUE, sep="\t")
+
+
+Matrix3 <- Matrix2[,colnames(Matrix2) %in% rownames(Meta)]
+
+TAM_Genes <- scan("Gene_Order.txt", what="")
+
+Matrix3 <- Matrix3[rownames(Matrix3) %in% TAM_Genes, ]
+
+Matrix4 <- t(scale(t(as.matrix(Matrix3))))
+
+Matrix4[Matrix4 > 2.5] <- 2.5
+
+Matrix4[Matrix4 < -2.5] <- -2.5
+
+
+Matrix5 <- as.matrix(Matrix4)
+
+
+
+TAM_Genes <- scan("Gene_Order.txt", what="")
+
+TAM_Genes2 <- as.data.frame(TAM_Genes)
+
+Matrix6 <- merge(TAM_Genes2, Matrix5, by.x="TAM_Genes", by.y="row.names", all.x=TRUE)
+
+
+Matrix6t <- Matrix6
+
+
+order_vector <- TAM_Genes2$TAM_Genes
+
+Matrix6t <- Matrix6t[match(order_vector, Matrix6t$TAM_Genes), ]
+
+Matrix6t[is.na(Matrix6t)] <- -2.5
+
+
+######## Generate Microglia Heatmap
+
+Matrix6s <- Matrix6t
+
+Cell_Order <- Meta[Meta$Annotation == "Microglia",]
+
+Matrix7 <- Matrix6s[, colnames(Matrix6s) %in% rownames(Cell_Order)]
+
+
+Meta2 <- Meta[colnames(Matrix7), ]
+
+col_fun = colorRamp2(c(-1, 0.5, 1, 2), c("blue", "deepskyblue", "white", "red"))
+col_fun(seq(-3, 3))
+
+library(ComplexHeatmap)
+
+column_ha = HeatmapAnnotation(IDH_Status=Meta2$IDH_Status, Primary_Recurrent=Meta2$Primary_Recurrent, which = "column", col = list(IDH_Status = c("WT" =  "lightgrey", "Mut" = "black", "Unknown"="grey"), Primary_Recurrent = c("Primary" = "lightgrey", "Recurrent" = "black")))
+
+split = rep(1:14, each = 20)
+
+
+
+Ht = Heatmap(as.matrix(Matrix7), name = "Expression", show_column_names = FALSE, show_row_names = FALSE, cluster_rows = FALSE, col = col_fun, row_split = split, top_annotation = column_ha, width = ncol(Matrix7)*unit(0.05, "mm"), height = 1*unit(100, "mm"))
+
+
+pdf("Mcgill_Microglia_Myeloid_Glioma_Expression_Heatmap_Ordered_Split_Per_Row_Normalized_V3_newScale.pdf", height=10, width=200)
+
+Ht2 = draw(Ht)
+
+dev.off()
+
+
+
+######## Generate Macrophage Heatmap
+
+Matrix6s <- Matrix6t
+
+Cell_Order <- Meta[Meta$Annotation == "Macrophage",]
+
+Matrix7 <- Matrix6s[, colnames(Matrix6s) %in% rownames(Cell_Order)]
+
+
+Meta2 <- Meta[colnames(Matrix7), ]
+
+col_fun = colorRamp2(c(-1, 0.5, 1, 2), c("blue", "deepskyblue", "white", "red"))
+col_fun(seq(-3, 3))
+
+library(ComplexHeatmap)
+
+column_ha = HeatmapAnnotation(IDH_Status=Meta2$IDH_Status, Primary_Recurrent=Meta2$Primary_Recurrent, which = "column", col = list(IDH_Status = c("WT" =  "lightgrey", "Mut" = "black", "Unknown"="grey"), Primary_Recurrent = c("Primary" = "lightgrey", "Recurrent" = "black")))
+
+split = rep(1:14, each = 20)
+
+
+
+Ht = Heatmap(as.matrix(Matrix7), name = "Expression", show_column_names = FALSE, show_row_names = FALSE, cluster_rows = FALSE, col = col_fun, row_split = split, top_annotation = column_ha, width = ncol(Matrix7)*unit(0.05, "mm"), height = 1*unit(100, "mm"))
+
+
+pdf("Mcgill_Macrophage_Myeloid_Glioma_Expression_Heatmap_Ordered_Split_Per_Row_Normalized_V3_newScale.pdf", height=10, width=200)
+
+Ht2 = draw(Ht)
+
+dev.off()
+
+
+######## Generate Monocyte Heatmap
+
+Matrix6s <- Matrix6t
+
+Cell_Order <- Meta[Meta$Annotation == "Monocyte",]
+
+Matrix7 <- Matrix6s[, colnames(Matrix6s) %in% rownames(Cell_Order)]
+
+
+Meta2 <- Meta[colnames(Matrix7), ]
+
+col_fun = colorRamp2(c(-1, 0.5, 1, 2), c("blue", "deepskyblue", "white", "red"))
+col_fun(seq(-3, 3))
+
+library(ComplexHeatmap)
+
+column_ha = HeatmapAnnotation(IDH_Status=Meta2$IDH_Status, Primary_Recurrent=Meta2$Primary_Recurrent, which = "column", col = list(IDH_Status = c("WT" =  "lightgrey", "Mut" = "black", "Unknown"="grey"), Primary_Recurrent = c("Primary" = "lightgrey", "Recurrent" = "black")))
+
+split = rep(1:14, each = 20)
+
+
+
+Ht = Heatmap(as.matrix(Matrix7), name = "Expression", show_column_names = FALSE, show_row_names = FALSE, cluster_rows = FALSE, col = col_fun, row_split = split, top_annotation = column_ha, width = ncol(Matrix7)*unit(0.05, "mm"), height = 1*unit(100, "mm"))
+
+
+pdf("Mcgill_Monocyte_Myeloid_Glioma_Expression_Heatmap_Ordered_Split_Per_Row_Normalized_V3_newScale.pdf", height=10, width=200)
+
+Ht2 = draw(Ht)
+
+dev.off()
+
+
+######## Generate cDC Heatmap
+
+Matrix6s <- Matrix6t
+
+Cell_Order <- Meta[Meta$Annotation == "cDC",]
+
+Matrix7 <- Matrix6s[, colnames(Matrix6s) %in% rownames(Cell_Order)]
+
+
+Meta2 <- Meta[colnames(Matrix7), ]
+
+col_fun = colorRamp2(c(-1, 0.5, 1, 2), c("blue", "deepskyblue", "white", "red"))
+col_fun(seq(-3, 3))
+
+library(ComplexHeatmap)
+
+column_ha = HeatmapAnnotation(IDH_Status=Meta2$IDH_Status, Primary_Recurrent=Meta2$Primary_Recurrent, which = "column", col = list(IDH_Status = c("WT" =  "lightgrey", "Mut" = "black", "Unknown"="grey"), Primary_Recurrent = c("Primary" = "lightgrey", "Recurrent" = "black")))
+
+split = rep(1:14, each = 20)
+
+
+
+Ht = Heatmap(as.matrix(Matrix7), name = "Expression", show_column_names = FALSE, show_row_names = FALSE, cluster_rows = FALSE, col = col_fun, row_split = split, top_annotation = column_ha, width = ncol(Matrix7)*unit(0.05, "mm"), height = 1*unit(100, "mm"))
+
+
+pdf("Mcgill_cDC_Myeloid_Glioma_Expression_Heatmap_Ordered_Split_Per_Row_Normalized_V3_newScale.pdf", height=10, width=200)
+
+Ht2 = draw(Ht)
+
+dev.off()
+
+
+
+######## Generate Neutrophil Heatmap
+
+
+Matrix6s <- Matrix6t
+
+Cell_Order <- Meta[Meta$Annotation == "Neutrophil",]
+
+Matrix7 <- Matrix6s[, colnames(Matrix6s) %in% rownames(Cell_Order)]
+
+
+Meta2 <- Meta[colnames(Matrix7), ]
+
+col_fun = colorRamp2(c(-1, 0.5, 1, 2), c("blue", "deepskyblue", "white", "red"))
+col_fun(seq(-3, 3))
+
+library(ComplexHeatmap)
+
+column_ha = HeatmapAnnotation(IDH_Status=Meta2$IDH_Status, Primary_Recurrent=Meta2$Primary_Recurrent, which = "column", col = list(IDH_Status = c("WT" =  "lightgrey", "Mut" = "black", "Unknown"="grey"), Primary_Recurrent = c("Primary" = "lightgrey", "Recurrent" = "black")))
+
+split = rep(1:14, each = 20)
+
+
+
+Ht = Heatmap(as.matrix(Matrix7), name = "Expression", show_column_names = FALSE, show_row_names = FALSE, cluster_rows = FALSE, col = col_fun, row_split = split, top_annotation = column_ha, width = ncol(Matrix7)*unit(0.05, "mm"), height = 1*unit(100, "mm"))
+
+
+pdf("Mcgill_Neutrophil_Myeloid_Glioma_Expression_Heatmap_Ordered_Split_Per_Row_Normalized_V3_newScale.pdf", height=10, width=200)
+
+Ht2 = draw(Ht)
+
+dev.off()
+
+
+######## Generate Activity-dominated Myeloid cells Heatmap
+
+Matrix6s <- Matrix6t
+
+Cell_Order <- Meta[Meta$Annotation == "Activity",]
+
+Matrix7 <- Matrix6s[, colnames(Matrix6s) %in% rownames(Cell_Order)]
+
+
+Meta2 <- Meta[colnames(Matrix7), ]
+
+col_fun = colorRamp2(c(-1, 0.5, 1, 2), c("blue", "deepskyblue", "white", "red"))
+col_fun(seq(-3, 3))
+
+library(ComplexHeatmap)
+
+column_ha = HeatmapAnnotation(IDH_Status=Meta2$IDH_Status, Primary_Recurrent=Meta2$Primary_Recurrent, which = "column", col = list(IDH_Status = c("WT" =  "lightgrey", "Mut" = "black", "Unknown"="grey"), Primary_Recurrent = c("Primary" = "lightgrey", "Recurrent" = "black")))
+
+split = rep(1:14, each = 20)
+
+
+Ht = Heatmap(as.matrix(Matrix7), name = "Expression", show_column_names = FALSE, show_row_names = FALSE, cluster_rows = FALSE, col = col_fun, row_split = split, top_annotation = column_ha, width = ncol(Matrix7)*unit(0.05, "mm"), height = 1*unit(100, "mm"))
+
+
+pdf("Mcgill_Activity_Myeloid_Glioma_Expression_Heatmap_Ordered_Split_Per_Row_Normalized_V3_newScale.pdf", height=10, width=200)
+
+Ht2 = draw(Ht)
+
+dev.off()
+
+
+######## Generate Mono_Macro Myeloid cells Heatmap
+
+Matrix6s <- Matrix6t
+
+Cell_Order <- Meta[Meta$Annotation == "Mono_Macro",]
+
+Matrix7 <- Matrix6s[, colnames(Matrix6s) %in% rownames(Cell_Order)]
+
+
+Meta2 <- Meta[colnames(Matrix7), ]
+
+col_fun = colorRamp2(c(-1, 0.5, 1, 2), c("blue", "deepskyblue", "white", "red"))
+col_fun(seq(-3, 3))
+
+library(ComplexHeatmap)
+
+column_ha = HeatmapAnnotation(IDH_Status=Meta2$IDH_Status, Primary_Recurrent=Meta2$Primary_Recurrent, which = "column", col = list(IDH_Status = c("WT" =  "lightgrey", "Mut" = "black", "Unknown"="grey"), Primary_Recurrent = c("Primary" = "lightgrey", "Recurrent" = "black")))
+
+split = rep(1:14, each = 20)
+
+
+
+Ht = Heatmap(as.matrix(Matrix7), name = "Expression", show_column_names = FALSE, show_row_names = FALSE, cluster_rows = FALSE, col = col_fun, row_split = split, top_annotation = column_ha, width = ncol(Matrix7)*unit(0.05, "mm"), height = 1*unit(100, "mm"))
+
+
+pdf("Mcgill_Mono_Macro_Myeloid_Glioma_Expression_Heatmap_Ordered_Split_Per_Row_Normalized_V3_newScale.pdf", height=10, width=200)
+
+Ht2 = draw(Ht)
+
+dev.off()
+
+
+
+######## Generate Microglia_Like Myeloid cells Heatmap
+
+Matrix6s <- Matrix6t
+
+Cell_Order <- Meta[Meta$Annotation == "Microglia_Like",]
+
+Matrix7 <- Matrix6s[, colnames(Matrix6s) %in% rownames(Cell_Order)]
+
+
+Meta2 <- Meta[colnames(Matrix7), ]
+
+col_fun = colorRamp2(c(-1, 0.5, 1, 2), c("blue", "deepskyblue", "white", "red"))
+col_fun(seq(-3, 3))
+
+library(ComplexHeatmap)
+
+column_ha = HeatmapAnnotation(IDH_Status=Meta2$IDH_Status, Primary_Recurrent=Meta2$Primary_Recurrent, which = "column", col = list(IDH_Status = c("WT" =  "lightgrey", "Mut" = "black", "Unknown"="grey"), Primary_Recurrent = c("Primary" = "lightgrey", "Recurrent" = "black")))
+
+split = rep(1:14, each = 20)
+
+
+
+Ht = Heatmap(as.matrix(Matrix7), name = "Expression", show_column_names = FALSE, show_row_names = FALSE, cluster_rows = FALSE, col = col_fun, row_split = split, top_annotation = column_ha, width = ncol(Matrix7)*unit(0.05, "mm"), height = 1*unit(100, "mm"))
+
+
+pdf("Mcgill_Microglia_Like_Myeloid_Glioma_Expression_Heatmap_Ordered_Split_Per_Row_Normalized_V3_newScale.pdf", height=10, width=200)
+
+Ht2 = draw(Ht)
+
+dev.off()
