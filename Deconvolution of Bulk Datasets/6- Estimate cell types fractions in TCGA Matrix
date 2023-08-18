@@ -1,0 +1,27 @@
+###### Matrix has to be normalized without log-transformation ######
+
+
+#### Load log-transformed and normalized TCGA expression table to remove the log-transformation #####
+TCGA <- read.table("TCGA.GBMLGG.sampleMap_HiSeqV2", sep="\t", head=TRUE, row.names=1)
+
+TCGA3 <- 2^TCGA
+
+TCGA4 <- TCGA3-1 
+
+write.table(TCGA4, file="TCGA_Normalized_Full_GBMLGG.txt", sep="\t", quote=FALSE, col.names=NA)
+
+
+
+
+        cibersortx/fractions \
+        --username ~{username} \
+        --token ~{token} \
+        --mixture ./TCGA_Normalized_Full_GBMLGG.txt \
+        --single_cell TRUE \
+        --refsample ./MGB_LowR_Cibersort_Ready_Full_Raw_Expression.txt \
+        --outdir .
+
+
+        ###### --username and --token to be obtained from CIBERSORTx website by creating an account and contacting authors ######
+
+        ###### Use the CIBERSORTx website to obtain docker image of CIBERSORTx or after obtaining username and token you can use the Terra image for higher RAM power ########
