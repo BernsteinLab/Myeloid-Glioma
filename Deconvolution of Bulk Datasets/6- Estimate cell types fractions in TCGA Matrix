@@ -1,3 +1,5 @@
+#### Inside R #######
+
 ###### Matrix has to be normalized without log-transformation ######
 
 
@@ -10,7 +12,9 @@ TCGA4 <- TCGA3-1
 
 write.table(TCGA4, file="TCGA_Normalized_Full_GBMLGG.txt", sep="\t", quote=FALSE, col.names=NA)
 
+q()
 
+############ Exit R ##############
 
 
         cibersortx/fractions \
