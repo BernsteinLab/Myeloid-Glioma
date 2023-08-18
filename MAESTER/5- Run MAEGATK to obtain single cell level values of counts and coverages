@@ -1,0 +1,6 @@
+maegatk bcall --input=${bam_input} --output=${maegatk_outputs} --mito-genome=chrM.fa --min-reads=3 --ncores=20  --snake-stdout
+
+
+##### bam_input is the output from Tag_CB_UMI.sh script ####
+##### Make sure that chrM.fa is indexed using BWA and that all files can be located by maegatk 
+##### ${maegatk_outputs} is the folder where the maegatk.rds R object will be generated which is crucial for the next steps of the analysis
