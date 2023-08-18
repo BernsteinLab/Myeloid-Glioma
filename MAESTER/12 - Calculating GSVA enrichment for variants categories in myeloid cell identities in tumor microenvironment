@@ -1,0 +1,44 @@
+###################### Inside R #######################
+
+##### read the high-resolution pseudobulked table #######
+
+E <- read.table("Cell_Counts_Per_CellType_V10.txt", sep="\t", head=TRUE, row.names=1)
+
+##### Read PBMC-specific variants for myeloid cells ######
+
+Myeloid_PBMC_Not_Malignant <- scan("PBMC_Not_Malignant2.txt", what="")
+
+
+##### Read Tumor microenvironment-specific variants of myeloid cells as a list ######
+
+
+TAM_Not_PBMC <- scan("TAM_Not_PBMC.txt", what="")
+
+
+##### Place all the variants of interest in a list ######
+Combined_Groups <- scan("Combined_Groups6.txt", what="")
+
+######## Filter the pseudo bulked data frame to include only variants of interest
+
+E2 <- E[rownames(E) %in% Combined_Groups,]
+
+
+####### Remove variants not detected in any category #####
+
+E5 <- E2[rowSums(E4) > 0,]
+
+
+library(ComplexHeatmap)
+
+library("GSVA")
+
+Lists <- list(Myeloid_PBMC_Not_Malignant, TAM_Not_PBMC)
+
+Test <- gsva(as.matrix(E5), Lists, kcdf="Poisson")
+
+rownames(Test) <- c("Myeloid_PBMC_Not_Malignant", "TAM_Not_PBMC")
+
+
+write.table(Test, file=GSVA_Scores_Identities.txt", col.names=NA, quote=FALSE, sep="\t")
+
+###### Manually Added Cell Number and fraction of TAMs to the table and remove any identity with less than 10 cells contributing to the GSVA score to obtain reliable enrichments #########
