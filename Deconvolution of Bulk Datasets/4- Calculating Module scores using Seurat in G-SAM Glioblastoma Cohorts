@@ -2,7 +2,7 @@ library(edgeR)
 library("Seurat")
 library("dplyr")
 
-###### Load TCGA Glioma gene expression matrix (It is raw counts) ######
+###### Load G-SAM Glioma gene expression matrix (It is raw counts) ######
 
 raw_counts <- read.table("gsam.rnaseq.expression-322.txt", head=TRUE, sep="\t", row.names=1)
 
