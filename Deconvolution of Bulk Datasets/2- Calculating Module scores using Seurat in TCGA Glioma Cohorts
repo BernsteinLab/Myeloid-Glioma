@@ -1,0 +1,55 @@
+library("Seurat")
+library("dplyr")
+
+###### Load TCGA Glioma gene expression matrix (It is normalized and log-transformed ######
+
+data <- read.table("../TCGA.GBMLGG.sampleMap_HiSeqV2", sep="\t", head=TRUE, row.names=1)
+
+TCGA <- CreateSeuratObject(counts = data, project = "TCGA", min.cells = 1, min.features = 1)
+
+DefaultAssay(TCGA) <- "RNA"
+
+all.genes <- rownames(TCGA)
+TCGA <- ScaleData(TCGA, features = all.genes)
+
+
+TCGA <- FindVariableFeatures(TCGA, selection.method = "vst", nfeatures = 2000)
+
+######## Load gene sets (Obtained as described in Step 1) ###########
+
+Microglia <- scan("Microglia.txt", what="")
+Macrophage <- scan("Macrophage.txt", what="")
+Monocyte <- scan("Monocyte.txt", what="")
+cDC <- scan("cDC.txt", what="")
+Neutrophils <- scan("Neutrophils.txt", what="")
+
+
+IL1B_Inflamm <- scan("IL1B_Inflamm.txt", what="")
+Inflamm_Microglia <- scan("Inflamm_Microglia.txt", what="")
+Complement_Immunosuppressive <- scan("Complement_Immunosuppressive.txt", what="")
+Scavenger <- scan("Scavenger.txt", what="")
+
+
+Memory_Like_Tcells <- scan("Memory_Like_Tcells.txt", what="")
+Terminal_Effector_Tcells <- scan("Terminal_Effector_Tcells.txt", what="")
+Treg <- scan("Treg.txt", what="")
+
+Oligo <- scan("Oligo.txt", what="")
+Pericytes <- scan("Pericytes.txt", what="")
+Endothelial <- scan("Endothelial.txt", what="")
+
+Malignant2 <- scan("Malignant2.txt", what="")
+Malignant3 <- scan("Malignant3.txt", what="")
+Malignant4 <- scan("Malignant4.txt", what="")
+Malignant6 <- scan("Malignant6.txt", what="")
+Malignant7 <- scan("Malignant7.txt", what="")
+
+############ Calculate the Module Scores and output the results ##########
+
+Features <- list(Microglia, Macrophage, Monocyte, cDC, Neutrophils, IL1B_Inflamm, Inflamm_Microglia, Complement_Immunosuppressive, Scavenger, Memory_Like_Tcells, Terminal_Effector_Tcells, Treg, Oligo, Pericytes, Endothelial, Malignant2, Malignant3, Malignant4, Malignant6, Malignant7)
+
+TCGA <-  AddModuleScore(object = TCGA, features = Features, name = c("Microglia", "Macrophage", "Monocyte", "cDC", "Neutrophils", "IL1B_Inflamm", "Inflamm_Microglia", "Complement_Immunosuppressive", "Scavenger", "Memory_Like_Tcells", "Terminal_Effector_Tcells", "Treg", "Oligo", "Pericytes", "Endothelial", "Malignant2", "Malignant3", "Malignant4", "Malignant6", "Malignant7"))
+
+
+
+write.table(TCGA@meta.data, file="TCGA_Glioma_MetaData.txt", sep="\t", col.names=NA, quote=FALSE)
