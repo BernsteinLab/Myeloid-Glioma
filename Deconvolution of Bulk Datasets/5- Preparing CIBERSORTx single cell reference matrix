@@ -1,0 +1,43 @@
+############Inside R####################
+
+########### Discrete_LowR_Cells.txt is a data frame containing cell barcodes in one column. The other column indicates the discrete annotation of the cell ######
+
+########### Cells were annotated as Malignant, Oligo, Vasculature, Myeloid, Tcells, or, other immune cells
+
+########## We used the Usage output of the all cell types cNMF
+
+########### For a cell to make it to Discrete_LowR_Cells.txt, it had to: (a) have below 10% usage for all the other broad categories than its annotation and (b) more than 2.5 fold than the second highest usage.
+
+library(dplyr)
+library(Seurat)
+library(SCOPfunctions)
+options(bitmapType='cairo')
+options(future.globals.maxSize = 8000 * 1024^2)
+
+
+###### Load the discrete cells that passed the criteria
+
+Discrete_LowR_Cells <- read.table("Discrete_LowR_Cells.txt", sep="\t", row.names=1)
+
+
+##### Load the Seurat object of all cells from MGB cohort ######
+
+ID <- subset(x = Tumors.combined, cells = rownames(Discrete_LowR_Cells))
+
+ID.data <- GetAssayData(object = ID, slot="counts")
+
+######### Order both the data frames in the same way
+
+order <- match(rownames(Discrete_LowR_Cells), colnames(ID.data))
+
+ID.data2  <- ID.data[ , order]
+
+######### Change the cell name (colnames) to the annotation as per the requirement of CIBERSORTx and save the matrix ######## 
+
+colnames(ID.data2) <- Discrete_LowR_Cells$V2
+
+
+Matrix2 <- utils_big_as.matrix(ID.data2, n_slices_init = 18, verbose = T)
+
+
+write.table(Matrix2, file="./MGB_LowR_Cibersort_Ready_Full_Raw_Expression.txt", sep="\t", col.names=NA, quote=FALSE)
