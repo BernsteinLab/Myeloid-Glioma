@@ -1,0 +1,10 @@
+Assemble_fastq.R /Path/To/Fastqs Maester barcodes.txt 12 8
+
+
+#### Assemble_fastq.R is obtained from https://github.com/petervangalen/MAESTER-2021/blob/main/Pre-processing/Assemble_fastq.R #####
+
+#### /Path/To/Fastqs is the folder which includes R1 and R2 fastqs
+
+##### Maester is the name of the sample (Located inside the folder) that will be proccessed
+
+###### barcodes.txt is the list of barcodes in the scRNA-Seq part that passes the QC threshold
