@@ -1,0 +1,16 @@
+To normalize the module scores in each bulk library, the module score of the program is divided by the imputed value of its respective cell type in the CIBERSORTx results outputs.  
+
+(Module score Value /  Imputed CIBERSORTx value for the corresponding category)
+
+(e.g.   Scavenger Module Score / Myeloid Imputed Fraction )
+
+
+The normalized module scores were then used for correlation with published clinical data available online, including IDH mutation status and, Molecular Grade. 
+
+
+For correlation with clinical data, the normalized module scores were log10 transformed by using the following formula: 
+
+if x >= 0:  LOG10[Absolute(x) + 1]
+if x < 0: - LOG10[Absolute(x) + 1]
+
+Where “x” is the normalized module score value.
