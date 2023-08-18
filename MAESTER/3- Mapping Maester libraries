@@ -1,0 +1,1 @@
+STAR --genomeDir /seq/epiprod02/Chadi/Genomes/STAR/hg38_MitoMasked/ --readFilesIn Maester_Processed_R2.fastq.gz --outFileNamePrefix ./Mapped/Maester --outSAMtype BAM SortedByCoordinate --outFilterMultimapNmax 2 --outFilterScoreMinOverLread 0.25 --readFilesCommand zcat;
