@@ -1,0 +1,118 @@
+######## We combine the single-cell count matrix for primary tumor and PBMC libraries #################
+
+############################ Inside R ##########################################
+
+data_A <- read.table("PT_Maester_Counts.txt",head=TRUE, sep="\t", row.names=1)
+
+data_PBMC <- read.table("PBMC_Maester_Counts.txt",head=TRUE, sep="\t", row.names=1)
+
+
+data_Final <- merge(data_A, data_PBMC, by="row.names")
+
+rownames(data_Final) <- data_Final$Row.names
+
+data_Final <- data_Final[,-1]
+
+library(dplyr)
+
+
+######## The annotation file includes the filtered barcodes and respective low-resolution annotation for both PT and PBMC libraries ##########
+######## Filter the merged matrix to include annotated barcodes only (cells that pass RNA-Seq QC ########
+
+annotation <- read.table("CellTypes_Coarse_V10.txt", head=TRUE, row.names = 1, sep="\t")
+
+common.cells <- intersect(rownames(annotation), colnames(data_Final))
+
+annotation <- annotation[common.cells,]
+
+data_Final <- data_Final[,common.cells]
+
+
+######### Subset the matrix to generate a matrix for each annotation #########
+
+cells.tib <- tibble(cell = common.cells,
+                    orig.ident = annotation$orig.ident,
+                    CellType_RNA = annotation$CellType)
+
+CellSubsets.ls <- list(unionCells = cells.tib$cell,
+                       TAM = filter(cells.tib, CellType_RNA == "Myeloid")$cell,
+                       Malignant = filter(cells.tib, CellType_RNA == "Malignant")$cell,
+	               Stromal = filter(cells.tib, CellType_RNA == "Stromal")$cell,
+	               Oligo = filter(cells.tib, CellType_RNA == "Oligo")$cell,
+	               Tcells = filter(cells.tib, CellType_RNA == "Tcells")$cell,
+                       Myeloid_PBMC = filter(cells.tib, CellType_RNA == "Myeloid_PBMC")$cell
+)
+
+
+data_Malignant <- data_Final[,colnames(data_Final) %in% CellSubsets.ls$Malignant]
+data_Tcells <- data_Final[,colnames(data_Final) %in% CellSubsets.ls$Tcells]
+data_TAM <- data_Final[,colnames(data_Final) %in% CellSubsets.ls$TAM]
+data_Oligo <- data_Final[,colnames(data_Final) %in% CellSubsets.ls$Oligo]
+data_Stromal <- data_Final[,colnames(data_Final) %in% CellSubsets.ls$Stromal]
+data_Myeloid_PBMC <- data_Final[,colnames(data_Final) %in% CellSubsets.ls$Myeloid_PBMC]
+
+
+
+############# Perform Pseduobulking by summing the values for each variant in each category and then output the results in a pseudobulked matrix #########
+
+Group_Names <- c("Tcells", "TAM", "Oligo", "Stromal", "Myeloid_PBMC", "Malignant", "All_Cells")
+
+
+E <- matrix(data=0, nrow = nrow(data_Final), ncol=length(Group_Names));
+
+for (i in 1:nrow(data_Final)){
+    
+        
+        
+        data_Tcells_G1 <- data_Tcells[i,,drop=FALSE]
+        
+        Test1 <- sum(as.numeric(data_Tcells_G1))
+        
+        
+        data_TAM_G1 <- data_TAM[i,,drop=FALSE]
+        
+        Test2 <- sum(as.numeric(data_TAM_G1))
+
+
+        data_Oligo_G1 <- data_Oligo[i,,drop=FALSE]
+        
+        Test3 <- sum(as.numeric(data_Oligo_G1))
+
+
+        data_Stromal_G1 <- data_Stromal[i,,drop=FALSE]
+        
+        Test4 <- sum(as.numeric(data_Stromal_G1))
+        
+        
+        
+        data_Myeloid_PBMC_G1 <- data_Myeloid_PBMC[i,,drop=FALSE]
+        
+        Test6 <- sum(as.numeric(data_Myeloid_PBMC_G1))
+        
+        
+     
+
+        data_Malignant_G1 <- data_Malignant[i,,drop=FALSE]
+        
+        Test7 <- sum(as.numeric(data_Malignant_G1))
+        
+        
+    
+        data_All_G1 <- data_Final[i,,drop=FALSE]
+        
+        Test8 <- sum(as.numeric(data_All_G1))
+
+        
+        E[i,] <- c(Test1, Test2, Test3, Test4, Test6, Test7, Test8)
+        
+}
+
+
+rownames(E) <- rownames(data_Final)
+
+colnames(E) <- Group_Names
+
+write.table(E, file="Sums_Counts_Per_CellType_V10.txt", sep="\t", col.names=NA, quote=FALSE)
+
+colnames(E)
+
