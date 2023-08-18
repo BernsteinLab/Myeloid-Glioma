@@ -3,7 +3,7 @@ setwd("~/Desktop/Chadi/Bioinformatics/Glioblastoma/Seurat_Bulk_Fig4/230515")
 library("Seurat")
 library("dplyr")
 
-###### Load TCGA Glioma gene expression matrix (It is normalized but not log-transformed ######
+###### Load GLASS Glioma gene expression matrix (It is normalized but not log-transformed ######
 
 data <- read.table("GLASS_Normalized_All_Genes.txt", sep="\t", head=TRUE, row.names=1)
 
