@@ -1,0 +1,40 @@
+#### Inside R #######
+
+###### Matrix has to be normalized without log-transformation ######
+
+
+library(edgeR)
+library("Seurat")
+library("dplyr")
+
+###### Load G-SAM Glioma gene expression matrix (It is raw counts) ######
+
+raw_counts <- read.table("gsam.rnaseq.expression-322.txt", head=TRUE, sep="\t", row.names=1)
+
+
+####### CPM-normalization and log-transformation ###########
+
+d <- DGEList(counts = raw_counts)
+
+d <- calcNormFactors(d)
+
+cpm_matrix <- cpm(d)
+
+write.table(cpm_matrix, file="GSAM_Normalized_Full_Matrix.txt", sep="\t", col.names=NA, quote=FALSE)
+
+q()
+
+############ Exit R ##############
+
+        cibersortx/fractions \
+        --username ~{username} \
+        --token ~{token} \
+        --mixture ./GSAM_Normalized_Full_Matrix.txt \
+        --single_cell TRUE \
+        --refsample ./MGB_LowR_Cibersort_Ready_Full_Raw_Expression.txt \
+        --outdir .
+
+
+        ###### --username and --token to be obtained from CIBERSORTx website by creating an account and contacting authors ######
+
+        ###### Use the CIBERSORTx website to obtain docker image of CIBERSORTx or after obtaining username and token you can use the Terra image for higher RAM power ########
