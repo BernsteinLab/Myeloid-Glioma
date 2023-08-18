@@ -1,0 +1,108 @@
+#################inside R###########
+
+data_A <- read.table("PT_Maester_Counts.txt",head=TRUE, sep="\t", row.names=1)
+
+
+data_Final <- data_A
+
+
+library(dplyr)
+
+######## The annotation file includes the filtered barcodes and respective high-resolution annotation for myeloid cells in Primary Tumor libraries ##########
+######## Annotation criteria shown in the methods section ########
+
+annotation <- read.table("CellTypes_Fine_V10.txt", head=TRUE, row.names = 1, sep="\t")
+
+common.cells <- intersect(rownames(annotation), colnames(data_Final))
+
+annotation <- annotation[common.cells,]
+
+data_Final <- data_Final[,common.cells]
+
+
+######### Subset the matrix to generate a matrix for each high-resolution annotation #########
+
+
+cells.tib <- tibble(cell = common.cells,
+                    CellType_RNA = annotation$Identity)
+
+CellSubsets.ls <- list(unionCells = cells.tib$cell,
+                       Macrophage = filter(cells.tib, CellType_RNA == "Macrophages")$cell,
+                       Monocyte = filter(cells.tib, CellType_RNA == "Monocytes")$cell,
+                       Mono_Macro = filter(cells.tib, CellType_RNA == "Mono_Macro")$cell,
+                       Microglia_Like = filter(cells.tib, CellType_RNA == "Microglia_Like")$cell,
+                       cDC = filter(cells.tib, CellType_RNA == "cDC")$cell,
+                       Microglia = filter(cells.tib, CellType_RNA == "Microglia")$cell,
+                       Neutrophil = filter(cells.tib, CellType_RNA == "Neutrophils")$cell
+)
+
+
+
+data_Macrophage <- data_Final[,colnames(data_Final) %in% CellSubsets.ls$Macrophage]
+data_Monocyte <- data_Final[,colnames(data_Final) %in% CellSubsets.ls$Monocyte]
+data_Mono_Macro <- data_Final[,colnames(data_Final) %in% CellSubsets.ls$Mono_Macro]
+data_Microglia_Like <- data_Final[,colnames(data_Final) %in% CellSubsets.ls$Microglia_Like]
+data_cDC <- data_Final[,colnames(data_Final) %in% CellSubsets.ls$cDC]
+data_Microglia <- data_Final[,colnames(data_Final) %in% CellSubsets.ls$Microglia]
+data_Neutrophil <- data_Final[,colnames(data_Final) %in% CellSubsets.ls$Neutrophil]
+
+############# Perform Pseduobulking by counting the number of cells that include each variant for each high-resolution identity  and then output the results in a pseudobulked matrix #########
+
+
+Group_Names <- c("Macrophage", "Monocyte", "Mono_Macro", "Microglia_Like", "cDC", "Microglia", "Neutrophil")
+
+E <- matrix(data=0, nrow = nrow(data_Final), ncol=length(Group_Names));
+
+for (i in 1:nrow(data_Final)){
+
+ data_Macrophage_G1 <- data_Macrophage[i,,drop=FALSE] 
+ data_Macrophage_G1 <- data_Macrophage_G1[,apply(data_Macrophage_G1,2,function(x) sum(x > 0))]
+ Test1 <- ncol(as.matrix(data_Macrophage_G1))
+
+        data_Monocyte_G1 <- data_Monocyte[i,,drop=FALSE]
+        data_Monocyte_G1 <- data_Monocyte_G1[,apply(data_Monocyte_G1,2,function(x) sum(x > 0))]
+        Test2 <- ncol(as.matrix(data_Monocyte_G1))
+
+        
+        data_Mono_Macro_G1 <- data_Mono_Macro[i,,drop=FALSE]
+        data_Mono_Macro_G1 <- data_Mono_Macro_G1[,apply(data_Mono_Macro_G1,2,function(x) sum(x > 0))]
+        Test3 <- ncol(as.matrix(data_Mono_Macro_G1))
+
+
+
+        data_Microglia_Like_G1 <- data_Microglia_Like[i,,drop=FALSE]
+        data_Microglia_Like_G1 <- data_Microglia_Like_G1[,apply(data_Microglia_Like_G1,2,function(x) sum(x > 0))]
+        Test4 <- ncol(as.matrix(data_Microglia_Like_G1))
+
+
+        data_cDC_G1 <- data_cDC[i,,drop=FALSE]
+        data_cDC_G1 <- data_cDC_G1[,apply(data_cDC_G1,2,function(x) sum(x > 0))]
+        Test5 <- ncol(as.matrix(data_cDC_G1))
+
+
+        data_Microglia_G1 <- data_Microglia[i,,drop=FALSE]
+        data_Microglia_G1 <- data_Microglia_G1[,apply(data_Microglia_G1,2,function(x) sum(x > 0))]
+        Test6 <- ncol(as.matrix(data_Microglia_G1))
+
+
+        data_Neutrophil_G1 <- data_Neutrophil[i,,drop=FALSE]
+        data_Neutrophil_G1 <- data_Neutrophil_G1[,apply(data_Neutrophil_G1,2,function(x) sum(x > 0))]
+        Test7 <- ncol(as.matrix(data_Neutrophil_G1))
+
+
+        
+        E[i,] <- c(Test1, Test2, Test3, Test4, Test5, Test6, Test7)
+        
+}
+
+
+rownames(E) <- rownames(data_Final)
+
+colnames(E) <- Group_Names
+
+
+write.table(E, file="Cell_Counts_Per_CellType_Fine_V10.txt", sep="\t", col.names=NA, quote=FALSE)
+
+colnames(E)
+
+
