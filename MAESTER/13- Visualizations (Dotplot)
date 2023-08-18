@@ -1,0 +1,28 @@
+#### Generate the dotplot #####
+
+##### Inside R ########
+
+library(ggplot2)
+
+######## GSVA is calculated as (GSVA PBMC-Specific enrichment - GSVA TME-Specific enrichment) ### See step 12 ######### 
+######## The data frame includes the fraction of cells annotated as each identity in the scRNA-Seq libraries ###
+data <- read.table("Identities_Dotplot_V10.txt", head=TRUE, sep="\t")
+
+
+scaled_data <- (data$GSVA - min(data$GSVA)) / (max(data$GSVA) - min(data$GSVA))
+
+scaled_data <- scaled_data * 2 - 1
+
+
+data2 <- data
+
+data2$GSVA <- scaled_data
+
+
+factor_order <- c("Neutrophils", "cDCs", "Monocytes", "Mono_Macro", "Macrophage", "Microglia_Like", "Microglia")
+
+
+data2$TAM <- factor(data2$TAM, levels = factor_order)
+
+
+ggplot(data2, aes(x=GSVA, y=TAM, size=Fraction2*10)) + geom_point(data = subset(data2, Fraction2 != 0)) + labs(y="Identity", x="Enrichment of PBMC Variants - Enrichment of TME Variants") +  scale_size_area(breaks = c(0.1,0.5, 1), max_size = 18) + scale_x_continuous(limits = c(-1.1,1.1)) + labs(col="TAM") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line.x = element_line(colour = "black"),  axis.text.y = element_text(face="bold", size=14), axis.text.x = element_text(face="bold", size=14), legend.text=element_text(size=12)) + geom_vline(xintercept = 0, linetype = "dashed", color = "black")
