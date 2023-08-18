@@ -1,0 +1,72 @@
+#################inside R###########
+
+#~~~~~~~~~~~~~~~~~~~~~#
+#### Upload Prerequisites ####
+#~~~~~~~~~~~~~~~~~~~~~#
+
+options(stringsAsFactors = FALSE)
+options(scipen = 999)
+
+library(tidyverse)
+library(SummarizedExperiment)
+library(Seurat)
+library(data.table)
+library(Matrix)
+library(ComplexHeatmap)
+library(gdata)
+library(stringr)
+library(ggforce)
+
+###### Read MAEGATK Output #############
+
+maegatk.rse <- readRDS("maegatk.rds")
+
+
+message("computeAFMutMatrix()")
+computeAFMutMatrix <- function(SE){
+  ref_allele <- as.character(rowRanges(SE)$refAllele)
+  
+  getMutMatrix <- function(letter){
+    mat <- (assays(SE)[[paste0(letter, "_counts_fw")]] + assays(SE)[[paste0(letter, "_counts_rev")]]) 
+    rownames(mat) <- paste0(as.character(1:dim(mat)[1]), "_", toupper(ref_allele), ">", letter)
+    return(mat[toupper(ref_allele) != letter,])
+  }
+  
+  rbind(getMutMatrix("A"), getMutMatrix("C"), getMutMatrix("G"), getMutMatrix("T"))
+}
+
+af.dm2 <- data.matrix(computeAFMutMatrix(maegatk.rse))
+
+
+############# Filter The matrix to include annotated barcodes from the respective scRNA-Seq library ##########
+
+seu <- read.table("CellTypes_Coarse_V10.txt", sep="\t", head=TRUE, row.names=1)
+
+common.cells <- intersect(rownames(seu), colnames(af.dm2))
+
+seu <- seu[common.cells,]
+
+af.dm3 <- af.dm2[,common.cells]
+
+write.table(af.dm3, file="Maester_Counts.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+############# Obtain Coverage Matrix ##########
+
+
+cov <- assays(maegatk.rse)[["coverage"]]
+
+cov2 <- as.matrix(cov)
+
+seu <- read.table("MGH915_CellTypes_Coarse_V10.txt", sep="\t", head=TRUE, row.names=1)
+
+common.cells <- intersect(rownames(seu), colnames(cov2))
+
+seu <- seu[common.cells,]
+
+cov3 <- cov2[,common.cells]
+
+write.table(cov3,file="Coverage.txt", sep="\t", quote=FALSE, col.names=NA)
+
+
+######## To be performed similarly for Primary tumor and PBMC libraries ###########
