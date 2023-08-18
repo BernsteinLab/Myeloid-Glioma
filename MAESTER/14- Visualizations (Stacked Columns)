@@ -1,0 +1,18 @@
+####### Inside R ##############
+####### The value is the average usage of the four immunomodulatory programs in the four tumors (Maester libraries - scRNA-Seq part) ######
+######## Others represent the average usage of all other programs (including identities) #########
+
+library(ggplot2)
+
+data <- read.table("Maester_Stack_V12.txt", head=TRUE, sep="\t")
+
+
+
+factor_order <- c("Neutrophil", "cDC", "Monocyte", "Mono_Macro", "Macrophage", "Microglia_Like", "Microglia")
+
+data$Identity <- factor(data$Identity, levels = factor_order)
+
+data$Program <- factor(data$Program, levels = c("Others", "Scavenger", "Complement", "RHOB", "IL1B"))
+
+
+ggplot(data, aes(x = Value, y = Identity, fill = Program)) + geom_bar(position="fill", stat="identity", width=0.45) + scale_fill_manual(values = c("Others" = "gray90", "IL1B" = "#AB0800", "Complement"="#007AFF", "RHOB"="#FF6961", "Scavenger" = "#0700C4")) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank())
