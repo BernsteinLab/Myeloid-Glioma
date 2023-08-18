@@ -1,0 +1,13 @@
+mkdir Trimmed;
+
+cp *_R2_*.fastq.gz ./Trimmed/;
+
+cd ./Trimmed/;
+
+for file in *;do gunzip $file;done 
+
+for file in *.fastq;do homerTools trim -5 24 $file;done;
+
+
+###### This will copy R2 files to another folder, unzip them, trim the first 25 bases in each read
+###### the ouputs can be renamed and gunzipped and placed in the same folder as the R1 read for subsequent steps of processing and analysis
