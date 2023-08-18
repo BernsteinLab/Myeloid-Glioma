@@ -1,0 +1,7 @@
+###### The top 50 genes were obtained for each myeloid program by ranking them in the merged gene spectra output. 
+
+###### For Tcells and Malignant Cells, we ranked the gene spectra from their respective cNMF outputs to obtain the top 50 genes for each program. 
+
+###### For the other cell types, we used the gene spectra output of the cNMF of all cell types. We ranked and obtained the top 50 genes for the Pericytes, Endothelial and Oligo programs. 
+
+###### To obtain cleaner signals, we removed any gene from each list appearing in the top 100 genes in all the other programs.
