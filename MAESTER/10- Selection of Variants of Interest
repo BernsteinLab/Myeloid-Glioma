@@ -1,0 +1,17 @@
+#### To identify variants specific to the myeloid cells in the tumor microenvironment, the variant has to meet the following criteria: 
+(a) meet the minimum VAF requirement for TAMs for the coverages in TAMs and Myeloid_PBMC categories. 
+(b) VAF=0 in Myeloid PBMC category. 
+(c)  VAF > minimum required for TAMs.
+
+##### To identify variants specific to the myeloid cells in PBMC, the variant has to meet the following criteria: 
+(a) meet the minimum VAF requirement for Myeloid_PBMC for the coverages in Malignant, TAMs and Myeloid_PBMC categories. 
+(b) VAF = 0 in the Malignant category. (If the tumor library is enriched for malignant cells, this criteria can be replaced with VAF in Myeloid_PBMC is 20 times more than malignant) 
+(c) VAF > 0 in the TAM category. 
+(d) VAF > minimum required in Myeloid_PBMC category
+
+
+The binomial test for detecting the minimum VAF required at a particular coverage was calculated using python as follows:
+
+
+
+
