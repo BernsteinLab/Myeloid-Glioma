@@ -1,0 +1,122 @@
+######## We merged the survival information (Survival time) and Events from the cohorts of G-SAM and GLASS. 
+
+######## We used libraries that are prepared from IDH WT GBM tumors. 
+
+######## We used the normalized module score values (without log transformation) 
+
+######### We removed duplicated patient entries (recurrence) by keeping the values from the primary tumor only. 
+
+######### We removed any library with a CIBERSORTx value of 0 for the myeloid lineage
+
+######### We converted the survival time to years 
+
+######### "GLASS_GSAM_Survival_Module_Scores_WT4_Normalized.txt" include the normalized values and OS time
+
+library(survival)
+library(lubridate)
+library(ggsurvfit)
+library(gtsummary)
+library(tidycmprsk)
+library(condsurv)
+library(survminer)
+
+
+data <- read.table("GLASS_GSAM_Survival_Module_Scores_WT4_Normalized.txt", head=TRUE, sep="\t")
+
+
+####### Survival Analysis for RHOB Inflammatory #######
+
+Cutpoint <- surv_cutpoint(data, time = "Survival", event = "Event", "Inflamm_Microglia.1", minprop = 0.3, progressbar = TRUE)
+
+test <- surv_categorize(Cutpoint, variables = "Inflamm_Microglia.1", labels = c("low", "high"))
+
+
+Surv(data$Survival, data$Event)
+
+
+s1 <- survfit(Surv(Survival, Event) ~ 1, data = test)
+
+survfit2(Surv(Survival, Event) ~ Inflamm_Microglia.1, data = test) %>% 
+  ggsurvfit(linewidth=1.5) +
+  labs(
+    x = "Years",
+    y = "Overall survival probability"
+  ) + 
+  add_risktable() + xlim(0, 5) + scale_color_manual(values=c("black", "grey")) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"), axis.title.x  = element_text(family = "Arial", size=12), axis.title.y  = element_text(family = "Arial", size=12), axis.text.x  = element_text(family = "Arial", size=12), axis.text.y = element_text(family = "Arial", size=12)) 
+
+
+coxph(Surv(Survival, Event) ~ Inflamm_Microglia.1, data = test) %>% tbl_regression(exp = TRUE) 
+
+
+####### Survival Analysis for Scavenger Immunosuppressive #######
+
+
+Cutpoint <- surv_cutpoint(data, time = "Survival", event = "Event", "Scavenger.1", minprop = 0.3, progressbar = TRUE)
+
+test <- surv_categorize(Cutpoint, variables = "Scavenger.1", labels = c("low", "high"))
+
+Surv(data$Survival, data$Event)
+
+
+s1 <- survfit(Surv(Survival, Event) ~ 1, data = test)
+
+survfit2(Surv(Survival, Event) ~ Scavenger.1, data = test) %>% 
+  ggsurvfit(linewidth=1.5) +
+  labs(
+    x = "Years",
+    y = "Overall survival probability"
+  ) + 
+  add_risktable() + xlim(0, 5) + scale_color_manual(values=c("black", "grey")) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"), axis.title.x  = element_text(family = "Arial", size=12), axis.title.y  = element_text(family = "Arial", size=12), axis.text.x  = element_text(family = "Arial", size=12), axis.text.y = element_text(family = "Arial", size=12)) 
+
+
+coxph(Surv(Survival, Event) ~ Scavenger.1, data = test) %>% tbl_regression(exp = TRUE) 
+
+
+####### Survival Analysis for Complement Immunosuppressive #######
+
+
+Cutpoint <- surv_cutpoint(data, time = "Survival", event = "Event", "Complement_Immunosuppressive.1", minprop = 0.3, progressbar = TRUE)
+
+test <- surv_categorize(Cutpoint, variables = "Complement_Immunosuppressive.1", labels = c("low", "high"))
+
+
+Surv(data$Survival, data$Event)
+
+
+s1 <- survfit(Surv(Survival, Event) ~ 1, data = test)
+
+survfit2(Surv(Survival, Event) ~ Complement_Immunosuppressive.1, data = test) %>% 
+  ggsurvfit(linewidth=1.5) +
+  labs(
+    x = "Years",
+    y = "Overall survival probability"
+  ) + 
+  add_risktable() + xlim(0, 5) + scale_color_manual(values=c("black", "grey")) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"), axis.title.x  = element_text(family = "Arial", size=12), axis.title.y  = element_text(family = "Arial", size=12), axis.text.x  = element_text(family = "Arial", size=12), axis.text.y = element_text(family = "Arial", size=12)) 
+
+
+coxph(Surv(Survival, Event) ~ Complement_Immunosuppressive.1, data = test) %>% tbl_regression(exp = TRUE) 
+
+
+####### Survival Analysis for IL1B inflammatory #######
+
+
+Cutpoint <- surv_cutpoint(data, time = "Survival", event = "Event", "IL1B_Inflamm.1", minprop = 0.3, progressbar = TRUE)
+
+test <- surv_categorize(Cutpoint, variables = "IL1B_Inflamm.1", labels = c("low", "high"))
+
+
+Surv(data$Survival, data$Event)
+
+
+s1 <- survfit(Surv(Survival, Event) ~ 1, data = test)
+
+survfit2(Surv(Survival, Event) ~ IL1B_Inflamm.1, data = test) %>% 
+  ggsurvfit(linewidth=1.5) +
+  labs(
+    x = "Years",
+    y = "Overall survival probability"
+  ) + 
+  add_risktable() + xlim(0, 5) + scale_color_manual(values=c("black", "grey")) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"), axis.title.x  = element_text(family = "Arial", size=12), axis.title.y  = element_text(family = "Arial", size=12), axis.text.x  = element_text(family = "Arial", size=12), axis.text.y = element_text(family = "Arial", size=12)) 
+
+
+coxph(Surv(Survival, Event) ~ IL1B_Inflamm.1, data = test) %>% tbl_regression(exp = TRUE)
