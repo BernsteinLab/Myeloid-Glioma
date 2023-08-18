@@ -1,0 +1,35 @@
+############################ Inside R ##########################################
+
+data <- read.table("Sums_Counts_Per_CellType_V10.txt", head=TRUE, row.names=1, sep="\t")
+
+data2 <- read.table("Sums_Coverage_Per_CellType_V10.txt", head=TRUE, row.names=1, sep="\t")
+
+####### Add a pseudo-count to the coverage matrix to prevent errors #############
+
+data2 <- data2 + 0.000001
+
+
+####### Adjust the counts data frame to enable the calculation script to work ########
+
+data$Position <- rownames(data)
+
+data$Position <- gsub("_...","",data$Position)
+
+data2$Position <- rownames(data2)
+
+data$Variant <- rownames(data)
+
+d = matrix(ncol=7)
+
+######### Calculate the VAFs ########
+
+for (n in rownames(data2)){a<-(data[data$Position==n,c(1:7)]);b<-as.numeric(data2[n,c(1:7)]); c <- t(a)/b;d<-rbind(d,t(c))}
+
+d2 <- na.omit(d)
+
+
+d3 <- as.data.frame(d2)
+
+d4 <- d3*100
+
+write.table(d4, file="Pseudobulked_VAFs_V10.txt", col.names=NA, quote=FALSE, sep="\t")
