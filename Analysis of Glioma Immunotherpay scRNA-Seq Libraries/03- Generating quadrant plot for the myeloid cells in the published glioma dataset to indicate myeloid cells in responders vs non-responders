@@ -1,0 +1,29 @@
+######## "Quadrant_Plot_Immunotherapy.txt" contains all non-doublet myeloid cells in the published data sets with the usage values of the immunomodulatory programs. 
+########  Xaxis is calculated by subtracting the usage of Complement Immunosuppression from the usage of IL1B pro-inflammatory ( Usage of IL1B Inflam - Usage of Complement )
+########  Yaxis is calculated by subtracting the usage of Scavenger Immunosuppression from the usage of RHOB pro-inflammatory ( Usage of RHOB Inflammatory - Usage of Scavenger )
+
+library(ggplot2)
+library(dplyr)
+library(scatterpie)
+
+data4 <- read.table("Quadrant_Plot_Immunotherapy.txt", sep="\t", head=TRUE, row.names=1)
+
+data5 <- data4[sample(nrow(data4)), ]
+
+
+pdf("Immunotherapy_NC_responders.pdf", height = 6, width = 7.5)
+
+ggplot(data5, aes(Xaxis, Yaxis)) + geom_point(aes(colour = Treatment), size=0.05) + scale_color_manual(values=c("nonresponder"="gray90", "responder"="black")) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + labs(color=NULL) + scale_x_continuous(limits = c(-100, 100)) + scale_y_continuous(limits = c(-100, 100))
+
+dev.off()
+
+
+
+pdf("Immunotherapy_NC_non_responders.pdf", height = 6, width = 7.5)
+
+ggplot(data5, aes(Xaxis, Yaxis)) + geom_point(aes(colour = Treatment), size=0.05) + scale_color_manual(values=c("responder"="gray90", "nonresponder"="black")) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + labs(color=NULL) + scale_x_continuous(limits = c(-100, 100)) + scale_y_continuous(limits = c(-100, 100))
+
+dev.off()
+
+
+
