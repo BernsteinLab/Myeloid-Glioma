@@ -1,0 +1,25 @@
+######## Immunotherapy_SIGLEC9_Boxplot contains the percentage of myeloid cells in each responder and non-responder tumors that are positive for SIGLEC9 expression and the usage of the four immunomodulatory programs
+
+library(tidyr)
+library(ggplot2)
+
+
+data <- read.table("Immunotherapy_SIGLEC9_Boxplot.txt", head=TRUE, row.names=1, sep="\t")
+
+data$RowName <- rownames(data)
+
+
+long_df <- gather(data, key = "NMF", value = "Value", -RowName, -Treatment)
+
+data2 <- long_df[long_df$NMF %in% c("Percentage_SIGLEC9","Scavenger","Complement","Rhob","IL1B"),]
+
+
+
+data2$NMF <- factor(data2$NMF, levels = c("Percentage_SIGLEC9","Scavenger","Complement","Rhob","IL1B"))
+
+data2$Treatment <- factor(data2$Treatment, levels = c("responder", "nonresponder"))
+
+
+
+ggplot(data2, aes(x = factor(NMF), y = Value, fill = Treatment)) +
+    geom_boxplot(width = 0.7, position = position_dodge(width = 0.7)) + geom_point(position = position_dodge(width = 0.7), aes(y = Value), color = "black", size = 1) + stat_boxplot(geom ='errorbar', width = 0.35, position = position_dodge(width = 0.7)) + theme(panel.background = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_rect(color = "black", fill = NA)) + scale_fill_manual(values = c("responder" = "white", "nonresponder" = "#808080"))
