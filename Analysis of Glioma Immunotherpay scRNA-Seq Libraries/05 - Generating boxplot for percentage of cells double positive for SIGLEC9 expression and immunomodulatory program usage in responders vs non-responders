@@ -1,0 +1,84 @@
+######## Double_Positive_SIGLEC9_NMF_Boxplot.txt contains the percentage of myeloid cells in each responder and non-responder tumors that are double positive for SIGLEC9 expression and the usage of the four immunomodulatory programs
+
+
+library(tidyr)
+library(ggplot2)
+
+
+data <- read.table("Double_Positive_SIGLEC9_NMF_Boxplot.txt", head=TRUE, row.names=1, sep="\t")
+
+data$RowName <- rownames(data)
+
+
+long_df <- gather(data, key = "NMF", value = "Value", -RowName, -Treatment)
+
+data2 <- long_df[long_df$NMF %in% c("Scavenger","Complement","RHOB","IL1B"),]
+
+
+
+data2$NMF <- factor(data2$NMF, levels = c("Scavenger","Complement","RHOB","IL1B"))
+
+data2$Treatment <- factor(data2$Treatment, levels = c("responder", "nonresponder"))
+
+
+
+ggplot(data2, aes(x = factor(NMF), y = Value, fill = Treatment)) +
+    geom_boxplot(width = 0.7, position = position_dodge(width = 0.7)) + geom_point(position = position_dodge(width = 0.7), aes(y = Value), color = "black", size = 1) + stat_boxplot(geom ='errorbar', width = 0.35, position = position_dodge(width = 0.7)) + theme(panel.background = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_rect(color = "black", fill = NA)) + scale_fill_manual(values = c("responder" = "white", "nonresponder" = "#808080"))
+
+
+
+
+
+group1 <- data2[data2$Treatment == "responder" & data2$NMF == "Scavenger",]
+group2 <- data2[data2$Treatment == "nonresponder" & data2$NMF == "Scavenger",]
+
+result <- wilcox.test(group1$Value, group2$Value)
+
+p_value <- result$p.value
+
+print(p_value) ######## 0.007455462
+
+
+group1 <- data2[data2$Treatment == "responder" & data2$NMF == "Complement",]
+group2 <- data2[data2$Treatment == "nonresponder" & data2$NMF == "Complement",]
+
+result <- wilcox.test(group1$Value, group2$Value)
+
+p_value <- result$p.value
+
+print(p_value). ####### 0.2941863
+
+
+
+
+group1 <- data2[data2$Treatment == "responder" & data2$NMF == "IL1B",]
+group2 <- data2[data2$Treatment == "nonresponder" & data2$NMF == "IL1B",]
+
+result <- wilcox.test(group1$Value, group2$Value)
+
+p_value <- result$p.value
+
+print(p_value). ####### 0.7878788
+
+
+
+
+
+group1 <- data2[data2$Treatment == "responder" & data2$NMF == "RHOB",]
+group2 <- data2[data2$Treatment == "nonresponder" & data2$NMF == "RHOB",]
+
+result <- wilcox.test(group1$Value, group2$Value)
+
+p_value <- result$p.value
+
+print(p_value) #### 0.1217582
+
+
+
+pvalues <- c(0.007455462,
+0.2941863,
+0.1217582,
+0.7878788)
+
+
+adjusted_p_value <- p.adjust(pvalues, method = "fdr")
