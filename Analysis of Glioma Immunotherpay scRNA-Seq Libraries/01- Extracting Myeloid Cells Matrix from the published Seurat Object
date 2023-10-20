@@ -1,0 +1,30 @@
+####### Seurat Object obtained from: Mei, Y., Wang, X., Zhang, J. et al. Siglec-9 acts as an immune-checkpoint molecule on macrophages in glioblastoma, restricting T-cell priming and immunotherapy response. Nat Cancer 4, 1273–1291 (2023). https://doi.org/10.1038/s43018-023-00598-9 #######
+
+####### Seurat object for the study was downloaded from https://figshare.com/articles/dataset/Single-cell_and_spatial_transcriptomic_profiling_of_human_glioblastomas/22434341. The name of the file is "GBM.RNA.integrated.24.rds" #######
+
+############Inside R####################
+
+library(dplyr)
+library(Seurat)
+
+Immunotherapy <- readRDS("GBM.RNA.integrated.24.rds")
+
+Immunotherapy <- UpdateSeuratObject(Immunotherapy)
+
+write.table(Immunotherapy@meta.data, file="./GBM_Immunotherapy_MetaData.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+Myeloid <- subset(x = Immunotherapy, subset = anno_ident == c("Macrophages","Microglial", "Monocytes", "cDCs"))
+
+Myeloid_Matrix <- GetAssayData(Myeloid, slot = "counts")
+
+Myeloid_Genes <- read.table("/seq/epiprod02/Chadi/Glioblastoma/Myeloid_NMF_Average_Gene_Spectra.txt", sep="\t", head=TRUE, row.names=1)
+
+Myeloid_Genes2 <- rownames(Myeloid_Genes)
+
+Myeloid_Matrix2 <- Myeloid_Matrix[rownames(Myeloid_Matrix) %in% Myeloid_Genes2,]
+
+write.table(t(as.matrix(Myeloid_Matrix2)), file="./GBM_Immunotherapy_Myeloid_cNMF.txt", sep="\t", col.names=NA, quote=FALSE)
+
+dim(Myeloid_Matrix2) ######### to find out the number for --numgenes in the next step (calculation script (2225)) #################
+
