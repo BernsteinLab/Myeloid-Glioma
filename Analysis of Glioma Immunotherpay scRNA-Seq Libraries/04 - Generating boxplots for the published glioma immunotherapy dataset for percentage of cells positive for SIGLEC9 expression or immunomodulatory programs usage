@@ -1,4 +1,4 @@
-######## Immunotherapy_SIGLEC9_Boxplot contains the percentage of myeloid cells in each responder and non-responder tumors that are positive for SIGLEC9 expression and the usage of the four immunomodulatory programs
+######## Immunotherapy_SIGLEC9_Boxplot.txt contains the percentage of myeloid cells in each responder and non-responder tumors that are positive for SIGLEC9 expression and the usage of the four immunomodulatory programs
 
 library(tidyr)
 library(ggplot2)
