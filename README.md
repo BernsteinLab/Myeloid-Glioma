@@ -1,4 +1,4 @@
-# Myeloid-Glioma
+# Programs, Origins, and Niches of Immunomodulatory Myeloid Cells in Gliomas
 This GitHub repository includes all scripts used to perform the analyses to study the Biology of Myeloid Cells in Glioma Microenvironments as per the methods section of: ....
 The steps are numbered in each folder according to the order in which they must be implemented.
 
