@@ -1,0 +1,79 @@
+######### Specific peaks that are used as input for the are identified using the normalized pseudo-bulked peaks file. We converted the log1p values to exponential values and considered a peak to be specific to a particular discrete annotation if it had a count at least 2.5 times higher than the average counts of the other annotations.
+
+R;
+
+############################ Inside R ##############################
+library(monaLisa)
+library(GenomicRanges)
+library(SummarizedExperiment)
+library(JASPAR2024)
+library(TFBSTools)
+library(BSgenome.Hsapiens.UCSC.hg38)
+library(ComplexHeatmap)
+library(circlize)
+library(universalmotif)
+
+
+Systemic <- rtracklayer::import(con = "Systemic_Specific.bed", format = "bed")
+
+Scavenger <- rtracklayer::import(con = "Scavenger_Specific.bed", format = "bed")
+
+Complement <- rtracklayer::import(con = "Complement_Specific.bed", format = "bed")
+
+Tissue_Resident <- rtracklayer::import(con = "Tissue_Resident_Specific.bed", format = "bed")
+
+
+Peaks <- c(Systemic, Scavenger, Complement, Tissue_Resident)
+
+Peaks2 <- trim(resize(Peaks, width = median(width(Peaks)), fix = "center"))
+summary(width(Peaks2))
+
+
+bins2 <- rep(c("Systemic", "Scavenger", "Complement", "Tissue_Resident"), c(length(Systemic), length(Scavenger), length(Complement), length(Tissue_Resident)))
+
+desired_order <- c("Systemic", "Scavenger", "Complement", "Tissue_Resident")
+
+bins2 <- factor(bins2, levels = desired_order)
+
+table(bins2)
+
+Peakseqs <- getSeq(BSgenome.Hsapiens.UCSC.hg38, Peaks2)
+
+
+
+
+db <- file.path(system.file("extdata", package="JASPAR2024"), 
+                    "JASPAR2024.sqlite")
+opts <- list()
+opts[["tax_group"]] <- "vertebrates"
+opts[["matrixtype"]] <- "PWM"
+opts[["collection"]] <- "CORE"
+pwms <- getMatrixSet(db, opts)
+
+
+hg38 <- Hsapiens
+
+
+se2 <- calcBinnedMotifEnrR(seqs = Peakseqs, bins = bins2, pwmL = pwms, background = "genome", genome = hg38, genome.oversample = 500)
+
+background_matrix_pvalue <- assay(se2, "negLog10Padj")
+write.table(background_matrix_pvalue, file="LISA_Supervised_Specific_Peaks_Background_Mode_log10pvalues_NoCollapsing_Background500.txt", col.names=NA, sep="\t", quote=FALSE)
+
+
+background_matrix <- assay(se2, "log2enr")
+write.table(background_matrix, file="LISA_Supervised_Specific_Peaks_Background_Mode_log2enrichment_No_Collapsing_Background500.txt", col.names=NA, sep="\t", quote=FALSE)
+
+saveRDS(se2, file="LISA_Supervised_Specific_Peaks_Background_Mode_500.rds")
+
+
+
+Motifs <- scan("Motifs_OI3.txt", what="")
+
+seSel2 <- se2[Motifs, ]
+
+pdf("LISA_Heatmap_Supervised_Specific_Peaks_Background_Mode_NoCollapsing_Selected_Motifs_Version6_No_Clustering.pdf", height=18, width=40)
+plotMotifHeatmaps(x = seSel2, which.plots = c("log2enr", "negLog10Padj"), 
+                  width = 4, cluster = FALSE, maxEnr = 2, maxSig = 10,
+                  show_dendrogram = TRUE, show_seqlogo = TRUE,
+                  width.seqlogo = 1.75, show_motif_GC = TRUE)
+dev.off()
