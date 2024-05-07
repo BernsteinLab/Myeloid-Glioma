@@ -1,0 +1,4 @@
+STAR --genomeDir /seq/epiprod02/Chadi/Genomes/STAR/2.7.10b/hg38 --readFilesIn DMSO_S1_R1_001_val_1.fq.gz DMSO_S1_R2_001_val_2.fq.gz --readFilesCommand zcat --outFileNamePrefix ./BAMS/DMSO --outSAMtype BAM SortedByCoordinate --outFilterMultimapNmax 1000 --outFilterScoreMinOverLread 0.25 --alignIntronMax 1 --alignEndsType EndToEnd;
+
+
+STAR --genomeDir /seq/epiprod02/Chadi/Genomes/STAR/2.7.10b/hg38 --readFilesIn P300I_S2_R1_001_val_1.fq.gz P300I_S2_R2_001_val_2.fq.gz --readFilesCommand zcat --outFileNamePrefix ./BAMS/p300i --outSAMtype BAM SortedByCoordinate --outFilterMultimapNmax 1000 --outFilterScoreMinOverLread 0.25 --alignIntronMax 1 --alignEndsType EndToEnd;
