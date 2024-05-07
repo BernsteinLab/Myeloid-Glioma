@@ -148,11 +148,6 @@ GBML019G1 <- NormalizeData(
 
 Matrix <- LayerData(GBML019G1, assay = "RNA", layer = "data")
 
-Genes <- scan("/seq/epiprod02/Chadi/Glioblastoma/Multiome/Ding/Myeloid_Genes.txt", what="")
-Cells <- scan("Myeloid_GBML019G1.txt", what="")
-
-Matrix2 <- Matrix[rownames(Matrix) %in% Genes, colnames(Matrix) %in% Cells]
-
-write.table(as.matrix(Matrix2), file="./GBML019G1_WT_Myeloid_Cells_Gene_Activities.txt", sep="\t", col.names=NA, quote=FALSE)
+write.table(as.matrix(Matrix), file="./GBML019G1_Cells_Gene_Activities.txt", sep="\t", col.names=NA, quote=FALSE)
 
 saveRDS(GBML019G1, file="GBML019G1_WT_ATAC.rds")
