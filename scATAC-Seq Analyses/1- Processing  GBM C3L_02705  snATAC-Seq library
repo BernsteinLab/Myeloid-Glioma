@@ -1,0 +1,146 @@
+library(Signac)
+library(Seurat)
+library(EnsDb.Hsapiens.v86)
+library(BSgenome.Hsapiens.UCSC.hg38)
+library(GenomicDistributionsData)
+
+options(future.globals.maxSize = 8000 * 1024^2)
+
+C3L_02705.data=CreateFragmentObject("./C3L-02705_CPT0189650015_snATAC_GBM/outs/fragments.tsv.gz")
+
+
+features <- CallPeaks(C3L_02705.data, format='BED', outdir ='./C3L-02705_CPT0189650015_snATAC_GBM/outs/',name='C3L_02705', cleanup=FALSE)
+
+
+C3L_02705_Peaks <- keepStandardChromosomes(features, pruning.mode = "coarse")
+C3L_02705_Peaks2 <- subsetByOverlaps(x = C3L_02705_Peaks, ranges = blacklist_hg38, invert = TRUE)
+
+saveRDS(C3L_02705_Peaks2, file="C3L_02705_Peaks.rds")
+
+C3L_02705.counts <- FeatureMatrix(
+  fragments = C3L_02705.data,
+  features = C3L_02705_Peaks
+)
+
+
+C3L_02705.chrom_assay <- CreateChromatinAssay(
+  counts = C3L_02705.counts,
+  sep = c("-", "-"),
+  fragments = './C3L-02705_CPT0189650015_snATAC_GBM/outs/fragments.tsv.gz',
+  min.cells = 10,
+  min.features = 200
+)
+
+C3L_02705 <- CreateSeuratObject(counts = C3L_02705.chrom_assay, assay = "peaks", project = "C3L_02705")
+
+annotations.C3L_02705 <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
+seqlevels(annotations.C3L_02705) <- paste0('chr', seqlevels(annotations.C3L_02705))
+genome(annotations.C3L_02705) <- "hg38"
+
+
+Annotation(C3L_02705) <- annotations.C3L_02705
+
+C3L_02705 <- NucleosomeSignal(object = C3L_02705)
+C3L_02705 <- TSSEnrichment(object = C3L_02705, fast = FALSE, assay='peaks')
+
+C3L_02705$blacklist_fraction <- FractionCountsInRegion(
+  object = C3L_02705, 
+  assay = 'peaks',
+  regions = blacklist_hg38
+)
+
+
+total_fragments <- CountFragments("./C3L-02705_CPT0189650015_snATAC_GBM/outs/fragments.tsv.gz")
+rownames(total_fragments) <- total_fragments$CB
+C3L_02705 $fragments <- total_fragments[colnames(C3L_02705), "frequency_count"]
+
+C3L_02705 <- FRiP(
+  object = C3L_02705,
+  assay = 'peaks',
+  total.fragments = 'fragments'
+)
+
+
+pdf("C3L_02705_WT_ATAC_DensityScatter.pdf", height=5, width=9)
+DensityScatter(C3L_02705, x = 'nCount_peaks', y = 'TSS.enrichment', log_x = TRUE, quantiles = TRUE)
+dev.off()
+
+
+pdf("C3L_02705_WT_ATAC_QC_BF.pdf", height=5, width=12)
+VlnPlot(
+  object = C3L_02705,
+  features = c('nCount_peaks', 'TSS.enrichment', 'blacklist_fraction', 'nucleosome_signal', 'FRiP'),
+  pt.size = 0.1,
+  ncol = 5
+)
+dev.off()
+
+
+pdf("C3L_02705_WT_ATAC_TSS_Enrichment.pdf", height=5, width=6)
+C3L_02705$high.tss <- ifelse(C3L_02705$TSS.enrichment > 1.5, 'High', 'Low')
+TSSPlot(C3L_02705, group.by = 'high.tss') + NoLegend()
+dev.off()
+
+pdf("C3L_02705_WT_ATAC_Nucleosome_signal.pdf", height=5, width=6)
+C3L_02705$nucleosome_group <- ifelse(C3L_02705$nucleosome_signal > 2.5, 'NS > 2.5', 'NS < 2.5')
+FragmentHistogram(object = C3L_02705, group.by = 'nucleosome_group')
+dev.off()
+
+
+C3L_02705 <- subset(
+  x = C3L_02705,
+  subset = nCount_peaks > 350 &
+    nCount_peaks < 25000 &
+    FRiP > 0.15 &
+    blacklist_fraction < 0.05 &
+    nucleosome_signal < 2.5 &
+    TSS.enrichment > 1.5
+)
+
+
+pdf("C3L_02705_WT_ATAC_QC_AF.pdf", height=5, width=12)
+VlnPlot(
+  object = C3L_02705,
+  features = c('nCount_peaks', 'TSS.enrichment', 'blacklist_fraction', 'nucleosome_signal', 'FRiP'),
+  pt.size = 0.1,
+  ncol = 5
+)
+dev.off()
+
+
+DefaultAssay(C3L_02705) <- "peaks"
+
+
+C3L_02705 <- RunTFIDF(C3L_02705)
+C3L_02705 <- FindTopFeatures(C3L_02705, min.cutoff = 'q0')
+C3L_02705 <- RunSVD(C3L_02705)
+
+pdf("C3L_02705_WT_ATAC_DepthCor.pdf", height=5, width=9)
+DepthCor(C3L_02705)
+dev.off()
+
+
+C3L_02705 <- RunUMAP(object = C3L_02705, reduction = 'lsi', dims = 2:30)
+C3L_02705 <- FindNeighbors(object = C3L_02705, reduction = 'lsi', dims = 2:30)
+C3L_02705 <- FindClusters(object = C3L_02705, verbose = FALSE, algorithm = 3)
+
+
+pdf("C3L_02705_WT_ATAC_UMAP.pdf", height=5, width=7)
+DimPlot(object = C3L_02705, label = TRUE) + NoLegend()
+dev.off()
+
+
+gene.activities <- GeneActivity(C3L_02705)
+
+
+C3L_02705[['RNA']] <- CreateAssayObject(counts = gene.activities)
+C3L_02705 <- NormalizeData(
+  object = C3L_02705,
+  assay = 'RNA',
+  normalization.method = 'RC',
+  scale.factor = median(C3L_02705$nCount_RNA)
+)
+
+write.table(gene.activities, file="C3L_02705_WT_ATAC_Gene_Activities.txt", sep="\t", col.names=NA, quote=FALSE)
+
+saveRDS(C3L_02705, file="C3L_02705_WT_ATAC.rds")
