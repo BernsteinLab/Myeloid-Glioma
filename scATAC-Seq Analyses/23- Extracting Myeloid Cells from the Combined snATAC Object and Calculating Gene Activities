@@ -1,0 +1,74 @@
+library(Signac)
+library(Seurat)
+library(EnsDb.Hsapiens.v86)
+library(BSgenome.Hsapiens.UCSC.hg38)
+library(JASPAR2020)
+library(TFBSTools)
+
+options(future.globals.maxSize = 8000 * 1024^2)
+
+annotation <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
+seqlevels(annotation) <- paste0('chr', seqlevels(annotation))
+genome(annotation) <- "hg38"
+
+combined <- readRDS("Combined_snATAC_Glioma_ATAC.rds")
+
+
+Myeloid <- subset(combined, subset = Annotation == "Myeloid")
+
+
+Myeloid$allcells <- "all"
+
+Discrete_Peaks <- CallPeaks(Myeloid, group.by = "allcells", format='BED', outdir ='.', fragment.tempdir=".", name='Myeloid_Ding', cleanup=FALSE)
+
+Discrete_Peaks2 <- keepStandardChromosomes(Discrete_Peaks, pruning.mode = "coarse")
+Discrete_Peaks2 <- subsetByOverlaps(x = Discrete_Peaks2, ranges = blacklist_hg38, invert = TRUE)
+
+
+macs2_counts <- FeatureMatrix(
+  fragments = Fragments(Myeloid),
+  features = Discrete_Peaks2,
+  cells = colnames(Myeloid)
+)
+
+Myeloid[["peaks_macs2"]] <- CreateChromatinAssay(
+    counts = macs2_counts,
+    fragments = Fragments(Myeloid),
+    annotation = annotation
+)
+
+DefaultAssay(Myeloid) <- "peaks_macs2"
+
+Myeloid <- RunTFIDF(Myeloid)
+Myeloid <- FindTopFeatures(Myeloid, min.cutoff = 'q0')
+Myeloid <- RunSVD(Myeloid)
+
+pdf("Myeloid_Myeloid_Ding_ATAC_DepthCor.pdf", height=5, width=9)
+DepthCor(Myeloid)
+dev.off()
+
+
+Myeloid <- RunUMAP(object = Myeloid, reduction = 'lsi', dims = 2:30)
+Myeloid <- FindNeighbors(object = Myeloid, reduction = 'lsi', dims = 2:30)
+Myeloid <- FindClusters(object = Myeloid, verbose = FALSE, algorithm = 3)
+
+
+pdf("Myeloid_Myeloid_Ding_ATAC_UMAP_Clusters.pdf", height=5, width=7)
+DimPlot(object = Myeloid, label = TRUE)
+dev.off()
+
+gene.activities <- GeneActivity(Myeloid)
+
+
+Myeloid[['RNA']] <- CreateAssayObject(counts = gene.activities)
+Myeloid <- NormalizeData(
+  object = combined,
+  assay = 'RNA',
+  normalization.method = 'RC',
+  scale.factor = median(Myeloid$nCount_RNA)
+)
+
+write.table(gene.activities, file="Combined_Myeloid_snATAC_Glioma_Gene_Activities.txt", sep="\t", col.names=NA, quote=FALSE)
+
+saveRDS(Myeloid, file="Ding_Dataset_Myeloid.rds")
+
