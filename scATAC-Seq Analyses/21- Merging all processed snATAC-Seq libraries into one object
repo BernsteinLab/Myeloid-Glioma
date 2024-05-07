@@ -1,0 +1,541 @@
+library(Signac)
+library(Seurat)
+library(EnsDb.Hsapiens.v86)
+library(BSgenome.Hsapiens.UCSC.hg38)
+
+options(future.globals.maxSize = 8000 * 1024^2)
+
+
+GBML018G1 <- readRDS("../GBML018G1_WT_ATAC.rds")
+GBML019G1 <- readRDS("../GBML019G1_WT_ATAC.rds")
+C3L_02705 <- readRDS("C3L_02705_WT_ATAC.rds")
+C3L_03405 <- readRDS("C3L_03405_WT_ATAC.rds")
+C3L_03968 <- readRDS("C3L_03968_WT_ATAC.rds")
+C3N_00662 <- readRDS("C3N_00662_WT_ATAC.rds")
+C3N_00663 <- readRDS("C3N_00663_WT_ATAC.rds")
+C3N_01334 <- readRDS("C3N_01334_WT_ATAC.rds")
+C3N_01518 <- readRDS("C3N_01518_WT_ATAC.rds")
+C3N_01798 <- readRDS("C3N_01798_WT_ATAC.rds")
+C3N_01814 <- readRDS("C3N_01814_WT_ATAC.rds")
+C3N_01816 <- readRDS("C3N_01816_WT_ATAC.rds")
+C3N_01818 <- readRDS("C3N_01818_WT_ATAC.rds")
+C3N_02181 <- readRDS("C3N_02181_WT_ATAC.rds")
+C3N_02186 <- readRDS("C3N_02186_WT_ATAC.rds")
+C3N_02188 <- readRDS("C3N_02188_WT_ATAC.rds")
+C3N_02769 <- readRDS("C3N_02769_WT_ATAC.rds")
+C3N_02783 <- readRDS("C3N_02783_WT_ATAC.rds")
+C3N_02784 <- readRDS("C3N_02784_WT_ATAC.rds")
+C3N_03186 <- readRDS("C3N_03186_WT_ATAC.rds")
+
+
+GBML018G1_Peaks <- readRDS("../GBML018G1_Peaks.rds")
+GBML019G1_Peaks <- readRDS("../GBML019G1_Peaks.rds")
+C3L_02705_Peaks <- readRDS("C3L_02705_Peaks.rds")
+C3N_01518_Peaks <- readRDS("C3N_01518_Peaks.rds")
+C3N_02186_Peaks <- readRDS("C3N_02186_Peaks.rds")
+C3L_03405_Peaks <- readRDS("C3L_03405_Peaks2.rds")
+C3N_01798_Peaks <- readRDS("C3N_01798_Peaks.rds")
+C3N_02188_Peaks <- readRDS("C3N_02188_Peaks.rds")
+C3L_03968_Peaks <- readRDS("C3L_03968_Peaks.rds")
+C3N_01814_Peaks <- readRDS("C3N_01814_Peaks.rds")
+C3N_02769_Peaks <- readRDS("C3N_02769_Peaks.rds")
+C3N_00662_Peaks <- readRDS("C3N_00662_Peaks.rds")
+C3N_01816_Peaks <- readRDS("C3N_01816_Peaks.rds")
+C3N_02783_Peaks <- readRDS("C3N_02783_Peaks.rds")
+C3N_00663_Peaks <- readRDS("C3N_00663_Peaks2.rds")
+C3N_01818_Peaks <- readRDS("C3N_01818_Peaks.rds")
+C3N_02784_Peaks <- readRDS("C3N_02784_Peaks.rds")
+C3N_01334_Peaks <- readRDS("C3N_01334_Peaks2.rds")
+C3N_02181_Peaks <- readRDS("C3N_02181_Peaks.rds")
+C3N_03186_Peaks <- readRDS("C3N_03186_Peaks.rds")
+
+
+
+GBML018G1_P <- makeGRangesFromDataFrame(GBML018G1_Peaks)
+GBML019G1_P <- makeGRangesFromDataFrame(GBML019G1_Peaks)
+C3L_02705_P <- makeGRangesFromDataFrame(C3L_02705_Peaks)
+C3N_01518_P <- makeGRangesFromDataFrame(C3N_01518_Peaks)
+
+C3N_02186_P <- makeGRangesFromDataFrame(C3N_02186_Peaks)
+C3L_03405_P <- makeGRangesFromDataFrame(C3L_03405_Peaks)
+C3N_01798_P <- makeGRangesFromDataFrame(C3N_01798_Peaks)
+C3N_02188_P <- makeGRangesFromDataFrame(C3N_02188_Peaks)
+C3L_03968_P <- makeGRangesFromDataFrame(C3L_03968_Peaks)
+C3N_01814_P <- makeGRangesFromDataFrame(C3N_01814_Peaks)
+C3N_02769_P <- makeGRangesFromDataFrame(C3N_02769_Peaks)
+C3N_00662_P <- makeGRangesFromDataFrame(C3N_00662_Peaks)
+C3N_01816_P <- makeGRangesFromDataFrame(C3N_01816_Peaks)
+
+C3N_02783_P <- makeGRangesFromDataFrame(C3N_02783_Peaks)
+C3N_00663_P <- makeGRangesFromDataFrame(C3N_00663_Peaks)
+C3N_01818_P <- makeGRangesFromDataFrame(C3N_01818_Peaks)
+C3N_02784_P <- makeGRangesFromDataFrame(C3N_02784_Peaks)
+C3N_01334_P <- makeGRangesFromDataFrame(C3N_01334_Peaks)
+C3N_02181_P <- makeGRangesFromDataFrame(C3N_02181_Peaks)
+C3N_03186_P <- makeGRangesFromDataFrame(C3N_03186_Peaks)
+
+
+
+combined.peaks <- reduce(x = c(GBML018G1_P, GBML019G1_P, C3L_02705_P, C3N_01518_P, C3N_02186_P, C3L_03405_P, C3N_01798_P, C3N_02188_P, C3L_03968_P, C3N_01814_P, C3N_02769_P, C3N_00662_P, C3N_01816_P, C3N_02783_P, C3N_00663_P, C3N_01818_P, C3N_02784_P, C3N_01334_P, C3N_02181_P, C3N_03186_P))
+
+peakwidths <- width(combined.peaks)
+combined.peaks <- combined.peaks[peakwidths  < 10000 & peakwidths > 20]
+combined.peaks
+
+
+
+GBML018G1_F <- CreateFragmentObject(
+  path = "../GBML018G1/atac_fragments.tsv.gz",
+  cells = colnames(GBML018G1)
+)
+
+
+GBML019G1_F <- CreateFragmentObject(
+  path = "../GBML019G1/atac_fragments.tsv.gz",
+  cells = colnames(GBML019G1)
+)
+
+C3L_02705_F <- CreateFragmentObject(
+  path = "./C3L-02705_CPT0189650015_snATAC_GBM/outs/fragments.tsv.gz",
+  cells = colnames(C3L_02705)
+)
+
+
+C3L_03405_F <- CreateFragmentObject(
+  path = "./C3L-03405_CPT0224600013_snATAC_GBM/outs/fragments.tsv.gz",
+  cells = colnames(C3L_03405)
+)
+
+
+
+C3L_03968_F <- CreateFragmentObject(
+  path = "./C3L-03968_CPT0228220004_snATAC_GBM/outs/fragments.tsv.gz",
+  cells = colnames(C3L_03968)
+)
+
+
+
+C3N_00662_F <- CreateFragmentObject(
+  path = "./C3N-00662_CPT0087680014_snATAC_GBM/outs/fragments.tsv.gz",
+  cells = colnames(C3N_00662)
+)
+
+
+
+C3N_00663_F <- CreateFragmentObject(
+  path = "./C3N-00663_CPT0087730014_snATAC_GBM/outs/fragments.tsv.gz",
+  cells = colnames(C3N_00663)
+)
+
+
+
+C3N_01334_F <- CreateFragmentObject(
+  path = "./C3N-01334_CPT0125220004_snATAC_GBM/outs/fragments.tsv.gz",
+  cells = colnames(C3N_01334)
+)
+
+
+
+
+C3N_01518_F <- CreateFragmentObject(
+  path = "./C3N-01518_CPT0167640014_snATAC_GBM/outs/fragments.tsv.gz",
+  cells = colnames(C3N_01518)
+)
+
+
+
+C3N_01798_F <- CreateFragmentObject(
+  path = "./C3N-01798_CPT0167750015_snATAC_GBM/outs/fragments.tsv.gz",
+  cells = colnames(C3N_01798)
+)
+
+
+
+C3N_01814_F <- CreateFragmentObject(
+  path = "./C3N-01814_CPT0167860015_snATAC_GBM/outs/fragments.tsv.gz",
+  cells = colnames(C3N_01814)
+)
+
+
+C3N_01816_F <- CreateFragmentObject(
+  path = "./C3N-01816_CPT0168080014_snATAC_GBM/outs/fragments.tsv.gz",
+  cells = colnames(C3N_01816)
+)
+
+
+
+C3N_01818_F <- CreateFragmentObject(
+  path = "./C3N-01818_CPT0168270014_snATAC_GBM/outs/fragments.tsv.gz",
+  cells = colnames(C3N_01818)
+)
+
+
+
+C3N_02181_F <- CreateFragmentObject(
+  path = "./C3N-02181_CPT0168380014_snATAC_GBM/outs/fragments.tsv.gz",
+  cells = colnames(C3N_02181)
+)
+
+
+
+C3N_02186_F <- CreateFragmentObject(
+  path = "./C3N-02186_CPT0168720014_snATAC_GBM/outs/fragments.tsv.gz",
+  cells = colnames(C3N_02186)
+)
+
+
+
+C3N_02188_F <- CreateFragmentObject(
+  path = "./C3N-02188_CPT0168830014_snATAC_GBM/outs/fragments.tsv.gz",
+  cells = colnames(C3N_02188)
+)
+
+
+C3N_02769_F <- CreateFragmentObject(
+  path = "./C3N-02769_CPT0205570014_snATAC_GBM/outs/fragments.tsv.gz",
+  cells = colnames(C3N_02769)
+)
+
+
+C3N_02783_F <- CreateFragmentObject(
+  path = "./C3N-02783_CPT0205890014_snATAC_GBM/outs/fragments.tsv.gz",
+  cells = colnames(C3N_02783)
+)
+
+
+
+C3N_02784_F <- CreateFragmentObject(
+  path = "./C3N-02784_CPT0206000015_snATAC_GBM/outs/fragments.tsv.gz",
+  cells = colnames(C3N_02784)
+)
+
+
+
+C3N_03186_F <- CreateFragmentObject(
+  path = "./C3N-03186_CPT0206880004_snATAC_GBM/outs/fragments.tsv.gz",
+  cells = colnames(C3N_03186)
+)
+
+
+
+
+GBML018G1.counts <- FeatureMatrix(
+  fragments = GBML018G1_F,
+  features = combined.peaks,
+  cells = colnames(GBML018G1)
+)
+
+GBML019G1.counts <- FeatureMatrix(
+  fragments = GBML019G1_F,
+  features = combined.peaks,
+  cells = colnames(GBML019G1)
+)
+
+
+C3L_02705.counts <- FeatureMatrix(
+  fragments = C3L_02705_F,
+  features = combined.peaks,
+  cells = colnames(C3L_02705)
+)
+
+
+
+C3L_03405.counts <- FeatureMatrix(
+  fragments = C3L_03405_F,
+  features = combined.peaks,
+  cells = colnames(C3L_03405)
+)
+
+
+
+C3L_03968.counts <- FeatureMatrix(
+  fragments = C3L_03968_F,
+  features = combined.peaks,
+  cells = colnames(C3L_03968)
+)
+
+
+
+C3N_00662.counts <- FeatureMatrix(
+  fragments = C3N_00662_F,
+  features = combined.peaks,
+  cells = colnames(C3N_00662)
+)
+
+
+C3N_00663.counts <- FeatureMatrix(
+  fragments = C3N_00663_F,
+  features = combined.peaks,
+  cells = colnames(C3N_00663)
+)
+
+
+C3N_01334.counts <- FeatureMatrix(
+  fragments = C3N_01334_F,
+  features = combined.peaks,
+  cells = colnames(C3N_01334)
+)
+
+
+
+C3N_01518.counts <- FeatureMatrix(
+  fragments = C3N_01518_F,
+  features = combined.peaks,
+  cells = colnames(C3N_01518)
+)
+
+
+C3N_01798.counts <- FeatureMatrix(
+  fragments = C3N_01798_F,
+  features = combined.peaks,
+  cells = colnames(C3N_01798)
+)
+
+
+
+C3N_01814.counts <- FeatureMatrix(
+  fragments = C3N_01814_F,
+  features = combined.peaks,
+  cells = colnames(C3N_01814)
+)
+
+
+
+C3N_01816.counts <- FeatureMatrix(
+  fragments = C3N_01816_F,
+  features = combined.peaks,
+  cells = colnames(C3N_01816)
+)
+
+
+
+C3N_01818.counts <- FeatureMatrix(
+  fragments = C3N_01818_F,
+  features = combined.peaks,
+  cells = colnames(C3N_01818)
+)
+
+
+
+C3N_02181.counts <- FeatureMatrix(
+  fragments = C3N_02181_F,
+  features = combined.peaks,
+  cells = colnames(C3N_02181)
+)
+
+
+
+C3N_02186.counts <- FeatureMatrix(
+  fragments = C3N_02186_F,
+  features = combined.peaks,
+  cells = colnames(C3N_02186)
+)
+
+
+
+
+C3N_02188.counts <- FeatureMatrix(
+  fragments = C3N_02188_F,
+  features = combined.peaks,
+  cells = colnames(C3N_02188)
+)
+
+
+
+C3N_02769.counts <- FeatureMatrix(
+  fragments = C3N_02769_F,
+  features = combined.peaks,
+  cells = colnames(C3N_02769)
+)
+
+
+
+C3N_02783.counts <- FeatureMatrix(
+  fragments = C3N_02783_F,
+  features = combined.peaks,
+  cells = colnames(C3N_02783)
+)
+
+
+
+
+C3N_02784.counts <- FeatureMatrix(
+  fragments = C3N_02784_F,
+  features = combined.peaks,
+  cells = colnames(C3N_02784)
+)
+
+
+C3N_03186.counts <- FeatureMatrix(
+  fragments = C3N_03186_F,
+  features = combined.peaks,
+  cells = colnames(C3N_03186)
+)
+
+
+
+
+
+GBML018G1.assay <- CreateChromatinAssay(GBML018G1.counts, fragments = GBML018G1_F)
+GBML018G1_2 <- CreateSeuratObject(GBML018G1.assay, assay = "ATAC", project="GBML018G1")
+
+
+GBML019G1.assay <- CreateChromatinAssay(GBML019G1.counts, fragments = GBML019G1_F)
+GBML019G1_2 <- CreateSeuratObject(GBML019G1.assay, assay = "ATAC", project="GBML019G1")
+
+
+C3L_02705.assay <- CreateChromatinAssay(C3L_02705.counts, fragments = C3L_02705_F)
+C3L_02705_2 <- CreateSeuratObject(C3L_02705.assay, assay = "ATAC", project="C3L_02705")
+
+
+C3L_03405.assay <- CreateChromatinAssay(C3L_03405.counts, fragments = C3L_03405_F)
+C3L_03405_2 <- CreateSeuratObject(C3L_03405.assay, assay = "ATAC", project="C3L_03405")
+
+
+C3L_03968.assay <- CreateChromatinAssay(C3L_03968.counts, fragments = C3L_03968_F)
+C3L_03968_2 <- CreateSeuratObject(C3L_03968.assay, assay = "ATAC", project="C3L_03968")
+
+
+C3N_00662.assay <- CreateChromatinAssay(C3N_00662.counts, fragments = C3N_00662_F)
+C3N_00662_2 <- CreateSeuratObject(C3N_00662.assay, assay = "ATAC", project="C3N_00662")
+
+
+C3N_00663.assay <- CreateChromatinAssay(C3N_00663.counts, fragments = C3N_00663_F)
+C3N_00663_2 <- CreateSeuratObject(C3N_00663.assay, assay = "ATAC", project="C3N_00663")
+
+
+C3N_01334.assay <- CreateChromatinAssay(C3N_01334.counts, fragments = C3N_01334_F)
+C3N_01334_2 <- CreateSeuratObject(C3N_01334.assay, assay = "ATAC", project="C3N_01334")
+
+
+C3N_01518.assay <- CreateChromatinAssay(C3N_01518.counts, fragments = C3N_01518_F)
+C3N_01518_2 <- CreateSeuratObject(C3N_01518.assay, assay = "ATAC", project="C3N_01518")
+
+
+C3N_01798.assay <- CreateChromatinAssay(C3N_01798.counts, fragments = C3N_01798_F)
+C3N_01798_2 <- CreateSeuratObject(C3N_01798.assay, assay = "ATAC", project="C3N_01798")
+
+
+C3N_01814.assay <- CreateChromatinAssay(C3N_01814.counts, fragments = C3N_01814_F)
+C3N_01814_2 <- CreateSeuratObject(C3N_01814.assay, assay = "ATAC", project="C3N_01814")
+
+
+C3N_01816.assay <- CreateChromatinAssay(C3N_01816.counts, fragments = C3N_01816_F)
+C3N_01816_2 <- CreateSeuratObject(C3N_01816.assay, assay = "ATAC", project="C3N_01816")
+
+
+C3N_01818.assay <- CreateChromatinAssay(C3N_01818.counts, fragments = C3N_01818_F)
+C3N_01818_2 <- CreateSeuratObject(C3N_01818.assay, assay = "ATAC", project="C3N_01818")
+
+
+C3N_02181.assay <- CreateChromatinAssay(C3N_02181.counts, fragments = C3N_02181_F)
+C3N_02181_2 <- CreateSeuratObject(C3N_02181.assay, assay = "ATAC", project="C3N_02181")
+
+
+C3N_02186.assay <- CreateChromatinAssay(C3N_02186.counts, fragments = C3N_02186_F)
+C3N_02186_2 <- CreateSeuratObject(C3N_02186.assay, assay = "ATAC", project="C3N_02186")
+
+
+C3N_02188.assay <- CreateChromatinAssay(C3N_02188.counts, fragments = C3N_02188_F)
+C3N_02188_2 <- CreateSeuratObject(C3N_02188.assay, assay = "ATAC", project="C3N_02188")
+
+
+C3N_02769.assay <- CreateChromatinAssay(C3N_02769.counts, fragments = C3N_02769_F)
+C3N_02769_2 <- CreateSeuratObject(C3N_02769.assay, assay = "ATAC", project="C3N_02769")
+
+
+C3N_02783.assay <- CreateChromatinAssay(C3N_02783.counts, fragments = C3N_02783_F)
+C3N_02783_2 <- CreateSeuratObject(C3N_02783.assay, assay = "ATAC", project="C3N_02783")
+
+
+
+C3N_02784.assay <- CreateChromatinAssay(C3N_02784.counts, fragments = C3N_02784_F)
+C3N_02784_2 <- CreateSeuratObject(C3N_02784.assay, assay = "ATAC", project="C3N_02784")
+
+
+C3N_03186.assay <- CreateChromatinAssay(C3N_03186.counts, fragments = C3N_03186_F)
+C3N_03186_2 <- CreateSeuratObject(C3N_03186.assay, assay = "ATAC", project="C3N_03186")
+
+
+
+
+
+GBML018G1_2$dataset <- 'GBML018G1'
+GBML019G1_2$dataset <- 'GBML019G1'
+C3L_02705_2$dataset <- 'C3L_02705'
+C3L_03405_2$dataset <- 'C3L_03405'
+C3L_03968_2$dataset <- 'C3L_03968'
+C3N_00662_2$dataset <- 'C3N_00662'
+C3N_00663_2$dataset <- 'C3N_00663'
+C3N_01334_2$dataset <- 'C3N_01334'
+C3N_01518_2$dataset <- 'C3N_01518'
+C3N_01798_2$dataset <- 'C3N_01798'
+C3N_01814_2$dataset <- 'C3N_01814'
+C3N_01816_2$dataset <- 'C3N_01816'
+C3N_01818_2$dataset <- 'C3N_01818'
+C3N_02181_2$dataset <- 'C3N_02181'
+C3N_02186_2$dataset <- 'C3N_02186'
+C3N_02188_2$dataset <- 'C3N_02188'
+C3N_02769_2$dataset <- 'C3N_02769'
+C3N_02783_2$dataset <- 'C3N_02783'
+C3N_02784_2$dataset <- 'C3N_02784'
+C3N_03186_2$dataset <- 'C3N_03186'
+
+
+
+
+
+combined <- merge(
+  x = GBML018G1_2,
+  y = list(GBML019G1_2, C3L_02705_2, C3L_03405_2, C3L_03968_2, C3N_00662_2, C3N_00663_2, C3N_01334_2, C3N_01518_2, C3N_01798_2, C3N_01814_2, C3N_01816_2, C3N_01818_2, C3N_02181_2, C3N_02186_2, C3N_02188_2, C3N_02769_2, C3N_02783_2, C3N_02784_2, C3N_03186_2),
+  add.cell.ids = c("GBML018G1", "GBML019G1", "C3L_02705", "C3L_03405", "C3L_03968", "C3N_00662", "C3N_00663", "C3N_01334", "C3N_01518", "C3N_01798", "C3N_01814", "C3N_01816", "C3N_01818", "C3N_02181", "C3N_02186", "C3N_02188", "C3N_02769", "C3N_02783", "C3N_02784", "C3N_03186"))
+
+combined[["ATAC"]]
+
+
+saveRDS(combined, file="Combined_GBM_snATAC_Multiome_and_snATAC.rds")
+
+combined <- RunTFIDF(combined)
+combined <- FindTopFeatures(combined, min.cutoff = 'q0')
+combined <- RunSVD(combined)
+
+pdf("Combined_ATAC_DepthCor.pdf", height=5, width=9)
+DepthCor(combined)
+dev.off()
+
+
+combined <- RunUMAP(combined, dims = c(2,4:50), reduction = 'lsi')
+combined <- FindNeighbors(object = combined, reduction = 'lsi', dims = c(2,4:50))
+combined <- FindClusters(object = combined, verbose = FALSE, algorithm = 3)
+
+
+pdf("Combined_ATAC_UMAP_Clusters.pdf", height=5, width=7)
+DimPlot(combined, pt.size = 0.1)
+dev.off()
+
+pdf("Combined_ATAC_UMAP_Dataset.pdf", height=5, width=7)
+DimPlot(object = combined, group.by = "dataset", label = TRUE) + NoLegend()
+dev.off()
+
+saveRDS(combined, file="Combined_GBM_snATAC_Multiome_and_snATAC2.rds")
+
+combined <- readRDS("Combined_GBM_snATAC_Multiome_and_snATAC2.rds")
+annotation <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
+seqlevels(annotation) <- paste0('chr', seqlevels(annotation))
+genome(annotation) <- "hg38"
+Annotation(combined) <- annotation
+
+gene.activities <- GeneActivity(combined)
+
+
+combined[['RNA']] <- CreateAssayObject(counts = gene.activities)
+combined <- NormalizeData(
+  object = combined,
+  assay = 'RNA',
+  normalization.method = 'RC',
+  scale.factor = median(combined$nCount_RNA)
+)
+
+write.table(gene.activities, file="Combined_snATAC_Glioma_Ding_Dataset_Gene_Activities.txt", sep="\t", col.names=NA, quote=FALSE)
+
+saveRDS(combined, file="Combined_snATAC_Glioma_ATAC.rds")
