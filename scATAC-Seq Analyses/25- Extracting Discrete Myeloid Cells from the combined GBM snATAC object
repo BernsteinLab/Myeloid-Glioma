@@ -1,0 +1,75 @@
+library(Signac)
+library(Seurat)
+library(EnsDb.Hsapiens.v86)
+library(BSgenome.Hsapiens.UCSC.hg38)
+library(JASPAR2020)
+library(TFBSTools)
+
+options(future.globals.maxSize = 8000 * 1024^2)
+
+annotation <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
+seqlevels(annotation) <- paste0('chr', seqlevels(annotation))
+genome(annotation) <- "hg38"
+
+nnotation <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
+seqlevels(annotation) <- paste0('chr', seqlevels(annotation))
+genome(annotation) <- "hg38"
+
+combined <- readRDS("Combined_snATAC_Glioma_ATAC.rds")
+
+##### File containing the IDs of the discrete myeloid cells #########
+Myeloid_Discrete_Status4 <- scan("Myeloid_Discrete_Status_top400_WithIdentity.txt", what="")
+
+combined@meta.data$Myeloid_Discrete_Status4 <- Myeloid_Discrete_Status4
+
+
+Discrete4 <- subset(combined, subset = Myeloid_Discrete_Status4 == "Systemic" | Myeloid_Discrete_Status4 == "Tissue_resident" | Myeloid_Discrete_Status4 == "Complement" | Myeloid_Discrete_Status4 == "Scavenger" | Myeloid_Discrete_Status4 == "Monocyte" | Myeloid_Discrete_Status4 == "Microglia")
+
+Discrete4$allcells <- "all"
+
+Discrete_Peaks <- CallPeaks(Discrete4, group.by = "Myeloid_Discrete_Status4", format='BED', outdir ='.', fragment.tempdir=".", name='Myeloid_Discrete_Status4', cleanup=FALSE)
+
+
+Discrete_Peaks2 <- keepStandardChromosomes(Discrete_Peaks, pruning.mode = "coarse")
+Discrete_Peaks2 <- subsetByOverlaps(x = Discrete_Peaks2, ranges = blacklist_hg38, invert = TRUE)
+
+macs2_counts <- FeatureMatrix(
+  fragments = Fragments(Discrete4),
+  features = Discrete_Peaks2,
+  cells = colnames(Discrete4)
+)
+
+Discrete4[["peaks_macs2"]] <- CreateChromatinAssay(
+    counts = macs2_counts,
+    fragments = Fragments(Discrete4),
+    annotation = annotation
+)
+
+DefaultAssay(Discrete4) <- "peaks_macs2"
+
+Discrete4 <- RunTFIDF(Discrete4)
+Discrete4 <- FindTopFeatures(Discrete4, min.cutoff = 'q0')
+Discrete4 <- RunSVD(Discrete4)
+
+pdf("Discrete4_Myeloid_Ding_ATAC_DepthCor.pdf", height=5, width=9)
+DepthCor(Discrete4)
+dev.off()
+
+
+Discrete4 <- RunUMAP(object = Discrete4, reduction = 'lsi', dims = 2:30)
+Discrete4 <- FindNeighbors(object = Discrete4, reduction = 'lsi', dims = 2:30)
+Discrete4 <- FindClusters(object = Discrete4, verbose = FALSE, algorithm = 3)
+
+
+pdf("Discrete4_Myeloid_Ding_ATAC_UMAP_Annotation.pdf", height=5, width=7)
+DimPlot(object = Discrete4, label = TRUE, group.by="Myeloid_Discrete_Status4")
+dev.off()
+
+
+Pseudobulk <- AggregateExpression(Discrete4, assays = "peaks_macs2", return.seurat = TRUE, group.by = "Myeloid_Discrete_Status4", normalization.method = "LogNormalize", scale.factor = 10000, margin = 1)
+
+
+Matrix2 <- LayerData(Pseudobulk, assay = "peaks_macs2", layer = "data")
+write.table(as.matrix(Matrix2), file="Discrete4_Pseudobulked_Normalized_Counts.txt", sep="\t", col.names=NA, quote=FALSE)
+
+saveRDS(Discrete4, file="Discrete_Myeloid_GBM_snATAC.rds")
