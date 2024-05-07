@@ -1,0 +1,180 @@
+library(Signac)
+library(Seurat)
+library(EnsDb.Hsapiens.v86)
+library(BSgenome.Hsapiens.UCSC.hg38)
+library(JASPAR2020)
+library(TFBSTools)
+library(motifmatchr)
+library(future)
+library(future.apply)
+library(data.table)
+library(purrr)
+
+options(future.globals.maxSize = 8000 * 1024^2)
+
+annotation <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
+seqlevels(annotation) <- paste0('chr', seqlevels(annotation))
+genome(annotation) <- "hg38"
+
+
+Discrete4 <- readRDS(file="Discrete_Myeloid_GBM_snATAC.rds")
+
+
+
+exportGroupBW  <- function(
+  object = NULL,
+  assay = "ATAC",
+  genome = "mm10",
+  groupBy = "Sample",
+  downGroupBy = "all",
+  normMethod = "TSS.enrichment", #'ncells', 'none' or any quantitative values from @meta.data
+  tileSize = 100,
+  cutoff = 4,
+  chromosome = "primary", #primary or all
+  threads = NULL,
+  outdir = NULL,
+  tmpdir = NULL
+  ){
+  
+    DefaultAssay(object) <- assay
+    genome(object) <- genome
+    annot <- object@meta.data
+    
+    #Column to group the cells by
+    Groups <- annot[, groupBy, drop=FALSE]
+    
+    GroupsNames <- unique(apply(Groups, 1, paste, collapse = "_"))
+    
+    if(unlist(downGroupBy)[1] != 'all'){
+        downGroupsNames <- apply(do.call(expand.grid, downGroupBy),1, paste, collapse = "_")
+        GroupsNames <- GroupsNames[GroupsNames %in% downGroupsNames]
+    }
+    
+    #Column to normalized by
+     if(!is.null(normMethod)){
+          if (tolower(normMethod) %in% c('rc', 'ncells', 'none')) {
+
+              normBy <- normMethod
+      } else{
+        normBy <- object[[normMethod, drop=FALSE]]
+       }
+
+    }
+    
+    #Get chromosome information
+    if(chromosome=="primary"){
+        prim_chr <- names(seqlengths(object)[!grepl("_alt|_fix|_random|chrUn", names(seqlengths(object)))])
+        seqlevels(object) <- prim_chr
+    }
+    availableChr <- names(seqlengths(object))
+    chromLengths <- seqlengths(object)
+    chromSizes <- GRanges(seqnames = availableChr, IRanges(start = rep(1, length(availableChr)), end = as.numeric(chromLengths)))
+
+    #Create tiles for each chromosome, from GenomicRanges
+    tiles <- unlist(slidingWindows(chromSizes, width = tileSize, step = tileSize))
+
+    if (threads == 1){
+        avai_threads <- 1
+    }else{
+        avai_threads <- threads - 1
+    }
+    
+    #Set number of thread in future
+    plan("multicore", workers = avai_threads)
+    
+    #Run the creation of bigwig for each cellgroups
+    covFiles <- future_lapply(GroupsNames, .createBWGroup, availableChr, tiles, normBy, tileSize, normMethod, cutoff, outdir, tmpdir)
+
+    plan("multicore", workers = 1)
+
+    covFiles
+
+  }
+  
+.createBWGroup <- function(groupNamei, availableChr, tiles, normBy, tileSize, normMethod, cutoff, outdir, tmpdir){
+
+    #Read the fragments file associated to the group
+    fragi <- rtracklayer::import(paste0(tmpdir, "/", groupNamei, ".tsv.gz"),format = "bed")
+
+    cellGroupi <- unique(fragi$name)
+
+    #Open the writting bigwig file
+    covFile <- file.path(outdir, paste0(groupNamei, "-TileSize-",tileSize,"-normMethod-",normMethod,".bw"))
+
+    covList <- lapply(seq_along(availableChr), function(k){
+
+        fragik <- fragi[seqnames(fragi) == availableChr[k],]
+        tilesk <- tiles[BiocGenerics::which(S4Vectors::match(seqnames(tiles), availableChr[k], nomatch = 0) > 0)]
+
+        if(length(fragik) == 0){
+            tilesk$reads <- 0
+        #If fragments
+        }else{
+
+          #N Tiles
+          nTiles <- chromLengths[availableChr[k]] / tileSize
+          #Add one tile if there is extra bases
+          if (nTiles%%1 != 0) {
+              nTiles <- trunc(nTiles) + 1
+          }
+
+          #Create Sparse Matrix
+          matchID <- S4Vectors::match(mcols(fragik)$name, cellGroupi)
+
+          #For each tiles of this chromosome, create start tile and end tile row, set the associated counts matching with the fragments
+          mat <- Matrix::sparseMatrix(
+              i = c(trunc(start(fragik) / tileSize), trunc(end(fragik) / tileSize)) + 1,
+              j = as.vector(c(matchID, matchID)),
+              x = rep(1,  2*length(fragik)),
+              dims = c(nTiles, length(cellGroupi)))
+
+          #Max count for a cells in a tile is set to ceiling (4)
+          if(!is.null(cutoff)){
+            mat@x[mat@x > cutoff] <- cutoff
+          }
+
+          #Sums the cells
+          mat <- Matrix::rowSums(mat)
+
+          tilesk$reads <- mat
+
+          #Normalization
+            if(!is.null(normMethod)){
+             if(tolower(normMethod) == "rc"){
+               tilesk$reads <- tilesk$reads * 10^4 / length(fragi$name)
+                  }else if(tolower(normMethod) == "ncells"){
+                    tilesk$reads <- tilesk$reads / length(cellGroupi)
+                       }else if(tolower(normMethod) == "none"){
+        }else{
+          if (!is.null(normBy)) {
+           normBy$Barcode <- substr(rownames(normBy), 11, nchar(rownames(normBy)))
+
+           tilesk$reads <- tilesk$reads * 10^6 / sum(normBy[normBy$Barcode %in% cellGroupi, 1])
+       
+           }
+        }
+      }
+    }
+    tilesk <- coverage(tilesk, weight = tilesk$reads)[[availableChr[k]]]
+    tilesk
+  })
+  names(covList) <- availableChr
+  covList <- as(covList, "RleList")
+  rtracklayer::export.bw(object = covList, con = covFile)
+  return(covFile)
+}
+
+
+exportGroupBW(object = Discrete4,
+  assay = "peaks_macs2",
+  genome = "hg38",
+  groupBy = "Myeloid_Discrete_Status4",
+  downGroupBy = "all",
+  normMethod = "nCount_peaks_macs2",
+  tileSize = 50,
+  cutoff = 4,
+  chromosome = "primary",
+  threads = 1,
+  outdir = ".",
+  tmpdir = "."
+  )
