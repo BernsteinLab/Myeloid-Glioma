@@ -1,0 +1,158 @@
+library(Signac)
+library(Seurat)
+library(EnsDb.Hsapiens.v86)
+library(BSgenome.Hsapiens.UCSC.hg38)
+
+options(future.globals.maxSize = 8000 * 1024^2)
+
+
+
+GBML019G1.data=Read10X("./GBML019G1/")
+
+GBML019G1.chrom_assay <- CreateChromatinAssay(
+  counts = GBML019G1.data$'Peaks',
+  sep = c(":", "-"),
+  fragments = './GBML019G1/atac_fragments.tsv.gz',
+  min.cells = 10,
+  min.features = 200
+)
+
+GBML019G1 <- CreateSeuratObject(counts = GBML019G1.chrom_assay, assay = "peaks", project = "GBML019G1")
+
+annotations.GBML019G1 <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
+seqlevels(annotations.GBML019G1) <- paste0('chr', seqlevels(annotations.GBML019G1))
+genome(annotations.GBML019G1) <- "hg38"
+
+
+Annotation(GBML019G1) <- annotations.GBML019G1
+
+GBML019G1 <- NucleosomeSignal(object = GBML019G1)
+GBML019G1 <- TSSEnrichment(object = GBML019G1, fast = FALSE, assay='peaks')
+
+GBML019G1$blacklist_fraction <- FractionCountsInRegion(
+  object = GBML019G1, 
+  assay = 'peaks',
+  regions = blacklist_hg38
+)
+
+
+total_fragments <- CountFragments("./GBML019G1/atac_fragments.tsv.gz")
+rownames(total_fragments) <- total_fragments$CB
+GBML019G1 $fragments <- total_fragments[colnames(GBML019G1), "frequency_count"]
+
+GBML019G1 <- FRiP(
+  object = GBML019G1,
+  assay = 'peaks',
+  total.fragments = 'fragments'
+)
+
+
+pdf("GBML019G1_WT_ATAC_DensityScatter.pdf", height=5, width=9)
+DensityScatter(GBML019G1, x = 'nCount_peaks', y = 'TSS.enrichment', log_x = TRUE, quantiles = TRUE)
+dev.off()
+
+
+pdf("GBML019G1_WT_ATAC_QC_BF.pdf", height=5, width=12)
+VlnPlot(
+  object = GBML019G1,
+  features = c('nCount_peaks', 'TSS.enrichment', 'blacklist_fraction', 'nucleosome_signal', 'FRiP'),
+  pt.size = 0.1,
+  ncol = 5
+)
+dev.off()
+
+
+pdf("GBML019G1_WT_ATAC_TSS_Enrichment.pdf", height=5, width=6)
+GBML019G1$high.tss <- ifelse(GBML019G1$TSS.enrichment > 1.5, 'High', 'Low')
+TSSPlot(GBML019G1, group.by = 'high.tss') + NoLegend()
+dev.off()
+
+pdf("GBML019G1_WT_ATAC_Nucleosome_signal.pdf", height=5, width=6)
+GBML019G1$nucleosome_group <- ifelse(GBML019G1$nucleosome_signal > 1.75, 'NS > 1.75', 'NS < 1.75')
+FragmentHistogram(object = GBML019G1, group.by = 'nucleosome_group')
+dev.off()
+
+
+GBML019G1 <- subset(
+  x = GBML019G1,
+  subset = nCount_peaks > 500 &
+    nCount_peaks < 25000 &
+    FRiP > 0.15 &
+    blacklist_fraction < 0.05 &
+    nucleosome_signal < 1.75 &
+    TSS.enrichment > 1.5
+)
+
+
+pdf("GBML019G1_WT_ATAC_QC_AF.pdf", height=5, width=12)
+VlnPlot(
+  object = GBML019G1,
+  features = c('nCount_peaks', 'TSS.enrichment', 'blacklist_fraction', 'nucleosome_signal', 'FRiP'),
+  pt.size = 0.1,
+  ncol = 5
+)
+dev.off()
+
+
+GBML019G1_Peaks <- CallPeaks(object = GBML019G1, outdir="./GBML019G1/", cleanup=FALSE)
+
+GBML019G1_Peaks2 <- keepStandardChromosomes(GBML019G1_Peaks, pruning.mode = "coarse")
+GBML019G1_Peaks2 <- subsetByOverlaps(x = GBML019G1_Peaks2, ranges = blacklist_hg38, invert = TRUE)
+
+saveRDS(GBML019G1_Peaks2, file="GBML019G1_Peaks.rds")
+
+macs2_counts <- FeatureMatrix(
+  fragments = Fragments(GBML019G1),
+  features = GBML019G1_Peaks2,
+  cells = colnames(GBML019G1)
+)
+
+GBML019G1[["peaks_macs2"]] <- CreateChromatinAssay(
+    counts = macs2_counts,
+    fragments = './GBML019G1/atac_fragments.tsv.gz',
+    annotation = annotations.GBML019G1
+)
+
+DefaultAssay(GBML019G1) <- "peaks_macs2"
+
+
+GBML019G1 <- RunTFIDF(GBML019G1)
+GBML019G1 <- FindTopFeatures(GBML019G1, min.cutoff = 'q0')
+GBML019G1 <- RunSVD(GBML019G1)
+
+pdf("GBML019G1_WT_ATAC_DepthCor.pdf", height=5, width=9)
+DepthCor(GBML019G1)
+dev.off()
+
+
+GBML019G1 <- RunUMAP(object = GBML019G1, reduction = 'lsi', dims = 2:30)
+GBML019G1 <- FindNeighbors(object = GBML019G1, reduction = 'lsi', dims = 2:30)
+GBML019G1 <- FindClusters(object = GBML019G1, verbose = FALSE, algorithm = 3)
+
+
+pdf("GBML019G1_WT_ATAC_UMAP.pdf", height=5, width=7)
+DimPlot(object = GBML019G1, label = TRUE) + NoLegend()
+dev.off()
+
+
+gene.activities <- GeneActivity(GBML019G1)
+
+
+GBML019G1[['RNA']] <- CreateAssayObject(counts = gene.activities)
+GBML019G1 <- NormalizeData(
+  object = GBML019G1,
+  assay = 'RNA',
+  normalization.method = 'RC',
+  scale.factor = median(GBML019G1$nCount_RNA)
+)
+
+Matrix <- LayerData(GBML019G1, assay = "RNA", layer = "data")
+
+Genes <- scan("/seq/epiprod02/Chadi/Glioblastoma/Multiome/Ding/Myeloid_Genes.txt", what="")
+Cells <- scan("Myeloid_GBML019G1.txt", what="")
+
+Matrix2 <- Matrix[rownames(Matrix) %in% Genes, colnames(Matrix) %in% Cells]
+
+write.table(as.matrix(Matrix2), file="./GBML019G1_WT_Myeloid_Cells_Gene_Activities.txt", sep="\t", col.names=NA, quote=FALSE)
+
+saveRDS(GBML019G1, file="GBML019G1_WT_ATAC.rds")
