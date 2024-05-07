@@ -145,6 +145,9 @@ GBML018G1 <- NormalizeData(
   normalization.method = 'RC',
   scale.factor = median(GBML018G1$nCount_RNA)
 )
-write.table(as.matrix(Matrix2), file="./GBML018G1_WT_Myeloid_Cells_Gene_Activities.txt", sep="\t", col.names=NA, quote=FALSE)
+
+Matrix <- LayerData(GBML018G1, assay = "RNA", layer = "data")
+
+write.table(as.matrix(Matrix), file="./GBML018G1_Cells_Gene_Activities.txt", sep="\t", col.names=NA, quote=FALSE)
 
 saveRDS(GBML018G1, file="GBML018G1_WT_ATAC.rds")
