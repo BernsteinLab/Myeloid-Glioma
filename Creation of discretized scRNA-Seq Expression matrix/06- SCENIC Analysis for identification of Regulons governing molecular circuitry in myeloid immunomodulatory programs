@@ -1,0 +1,178 @@
+Sys.setenv(LIBARROW_MINIMAL = "false")
+Sys.setenv(ARROW_WITH_ZSTD = "ON")
+library(SCENIC)
+library(AUCell)
+library(RcisTarget)
+library(arrow)
+
+options(bitmapType='cairo')
+dir.create("int")
+
+exprMat <- read.table("Discrete_Suppressive_Inflammatory_Myeloid_For_SCENIC.txt", sep="\t", row.names=1, head=TRUE)
+
+exprMat <- as.matrix(exprMat)
+
+cellInfo <- read.table("Cells_Annotation.txt", sep="\t", row.names=1, head=TRUE)
+
+cellInfo <- as.data.frame(cellInfo)
+
+colnames(cellInfo) <- "Class"
+
+cellTypeColumn <- "Class"
+
+colnames(cellInfo)[which(colnames(cellInfo)==cellTypeColumn)] <- "CellType"
+
+cbind(table(cellInfo$CellType))
+
+saveRDS(cellInfo, file = "int/cellInfo.Rds")
+
+colVars <- list(CellType=c("Complement_Immunosuppressive"="deepskyblue2", "Systemic_Inflamm"="red", "Scavenger_Immunosuppressive"="royalblue4", "Tissue_Resident"="red3"))
+
+colVars$CellType <- colVars$CellType[intersect(names(colVars$CellType), cellInfo$CellType)]
+saveRDS(colVars, file="int/colVars.Rds")
+plot.new(); legend(0,1, fill=colVars$CellType, legend=names(colVars$CellType))
+dev.off()
+
+db <- importRankings("cisTarget_databases/hg38_10kbp_up_10kbp_down_full_tx_v10_clust.genes_vs_motifs.rankings.feather", indexCol = "motifs")
+names(db@rankings)[1] <- "features"
+db@org <- "hgnc"
+db@genome <- "hg38"
+arrow::write_feather(db@rankings, "cisTarget_databases/hg38_10kbp_up_10kbp_down_full_tx_v10_clust.genes_vs_motifs.rankings.feather")
+
+db <- importRankings("cisTarget_databases/hg38_500bp_up_100bp_down_full_tx_v10_clust.genes_vs_motifs.rankings.feather", indexCol = "motifs")
+names(db@rankings)[1] <- "features"
+db@org <- "hgnc"
+db@genome <- "hg38"
+arrow::write_feather(db@rankings, "cisTarget_databases/hg38_500bp_up_100bp_down_full_tx_v10_clust.genes_vs_motifs.rankings.feather")
+
+dbs <- list.files(dir)
+
+try(scenicOptions <- initializeScenic(org=org, dbDir=dir, nCores=28, datasetTitle=name, dbs=dbs))
+
+motifAnnotations_hgnc <- motifAnnotations
+
+scenicOptions <- initializeScenic(org=org, dbDir=dir, nCores=28, datasetTitle=name, dbs=dbs)
+
+scenicOptions@inputDatasetInfo$cellInfo <- "int/cellInfo.Rds"
+scenicOptions@inputDatasetInfo$colVars <- "int/colVars.Rds"
+
+saveRDS(scenicOptions, file="int/scenicOptions.Rds")
+
+genesKept <- geneFiltering(exprMat, scenicOptions)
+exprMat_filtered <- exprMat[genesKept, ]
+runCorrelation(exprMat_filtered, scenicOptions)
+runGenie3(exprMat_filtered, scenicOptions)
+
+
+runSCENIC_1_coexNetwork2modules(scenicOptions)
+save.image(file = "SCENICsm.RData")
+runSCENIC_2_createRegulons(scenicOptions,)
+runSCENIC_3_scoreCells(scenicOptions, exprMat_filtered)
+
+save.image(file = "SCENIC2sm.RData")
+
+
+runSCENIC_4_aucell_binarize(scenicOptions)
+
+nPcs <- c(5,15,50)
+
+fileNames <- tsneAUC(scenicOptions, aucType="AUC", nPcs=nPcs, perpl=c(5,15,50))
+fileNames <- tsneAUC(scenicOptions, aucType="AUC", nPcs=nPcs, perpl=c(5,15,50), onlyHighConf=TRUE, filePrefix="int/tSNE_oHC")
+
+fileNames <- paste0("int/",grep(".Rds", grep("tSNE_", list.files("int"), value=T), value=T))
+
+pdf("tSNE_For_Choosing_Settings.pdf", width=7, height=6)
+fileNames <- paste0("int/",grep(".Rds", grep("tSNE_oHC_AUC", list.files("int"), value=T, perl = T), value=T))
+plotTsne_compareSettings(fileNames, scenicOptions, showLegend=FALSE, varName="CellType", cex=.5)
+dev.off()
+
+save.image(file = "SCENIC3sm.RData")
+
+scenicOptions@settings$defaultTsne$aucType <- "AUC"
+scenicOptions@settings$defaultTsne$dims <- 5
+scenicOptions@settings$defaultTsne$perpl <- 15
+
+regulonAUC <- readRDS("./int/3.4_regulonAUC.Rds")
+
+kmeans_thresholds <- auc_thresh_kmeans(regulonAUC)
+
+binary_regulons <- binarize_regulons(regulonAUC,kmeans_thresholds)
+
+library(tidyverse)
+
+joined_bin_reg <- binary_regulons %>% 
+purrr::reduce(left_join,by="cells") %>% 
+tibble::column_to_rownames("cells")
+
+binary_regulons_trans <- as.matrix(t(joined_bin_reg))
+
+metadata_sub <- readRDS("./int/cellInfo.Rds")
+
+metadata_sub$cell_type <- metadata_sub$CellType
+
+binary_regulons_trans2 <- as.data.frame(binary_regulons_trans)
+
+rrs_df <- calculate_rrs(metadata_sub, binary_regulons = as.matrix(binary_regulons_trans2), cell_type_column="cell_type")
+
+
+
+pdf("Regulons_Ranking.pdf", height = 10, width = 10)
+plot_rrs_ranking(rrs_df,
+                 "all",
+                 ggrepel_force = 1,
+                 ggrepel_point_padding = 0.2,
+                 top_genes = 10,
+                 plot_extended = FALSE)
+dev.off()
+
+
+
+
+library(ggridges)
+
+pdf("Regulons_Distribution.pdf", height = 10, width = 10)
+rrs_df_nona <- subset(rrs_df,RSS > 0)
+ggplot(rrs_df_nona,aes(RSS,cell_type, fill = cell_type)) +
+  geom_density_ridges(scale = 5, alpha = 0.75) +
+  geom_vline(xintercept = 0.1) +
+  theme(legend.position = "none")
+dev.off()
+
+
+rrs_df_wide <- rrs_df %>%
+  spread(cell_type,RSS)
+
+rownames(rrs_df_wide) <- rrs_df_wide$regulon 
+rrs_df_wide <- rrs_df_wide[,2:ncol(rrs_df_wide)]
+
+rrs_df_wide_specific <- rrs_df_wide[apply(rrs_df_wide,MARGIN = 1 ,FUN =  function(x) any(x > 0.125)),]
+
+library(ComplexHeatmap)
+
+pdf("Regulons_Heatmap.pdf", height = 50, width = 10)
+Heatmap(as.matrix(rrs_df_wide_specific))
+dev.off()
+
+
+regulons_csi <- calculate_csi(regulonAUC,
+                              calc_extended = FALSE)
+
+pdf("Regulons_Connection_Index_Heatmap.pdf", height = 20, width = 20)
+plot_csi_modules(regulons_csi,
+                 nclust = 10,
+                 font_size_regulons = 8)
+dev.off()
+
+Regulons <- readRDS("./int/2.6_regulons_asGeneSet.Rds") 
+
+library(dplyr)
+
+Regulons2 <- lapply(Regulons, `length<-`, max(lengths(Regulons)))
+
+DF <- as.data.frame(Regulons2)
+
+write.table(DF, file="./Regulon_Gene_Sets.txt", sep="\t", col.names=NA, quote=FALSE)
+
+write.table(rrs_df, file="./Regulons_Ranking_Cell_Type.txt", sep="\t", col.names=NA, quote=FALSE)
+
+write.table(rrs_df_wide, file="./Regulons_Discrete_Immunomodulatory_Matrix.txt", sep="\t", col.names=NA, quote=FALSE)
