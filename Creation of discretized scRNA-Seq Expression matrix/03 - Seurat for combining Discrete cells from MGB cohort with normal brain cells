@@ -12,7 +12,25 @@ library(Seurat)
 options(bitmapType='cairo')
 options(future.globals.maxSize = 8000 * 1024^2)
 
-######## This is a combined discrete scRNA-Seq expression matrix for the MGB Seq-Well cohort ########
+############Inside R####################
+
+library(dplyr)
+library(Seurat)
+options(bitmapType='cairo')
+options(future.globals.maxSize = 8000 * 1024^2)
+
+
+######### This following text file include the list of determined discrete cells as mentioned above ###########
+Cells <- scan("Discrete4_Full_Cells.txt", what="")
+
+######## Tumors.combined is a combined scRNA-Seq Seurat object for the MGB Seq-Well cohort (Codes available in Processing of scRNA-Seq Files (Related to Figure 1) ########
+
+Discrete <- subset(x = Tumors.combined, cells = Cells)
+
+Discrete.data <- as.matrix(GetAssayData(object = Discrete, slot="counts"))
+
+write.table(Discrete.data, file="./Discrete4_Full_Raw_Expression.txt", sep="\t", col.names=NA, quote=FALSE)
+
 Glioma.data <- read.table("Discrete4_Full_Raw_Expression.txt", sep="\t", head=TRUE, row.names=1)
 
 ######## Published libraries from previous step 
