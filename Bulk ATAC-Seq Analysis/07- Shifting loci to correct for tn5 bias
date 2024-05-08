@@ -1,0 +1,9 @@
+bedtools bamtobed -i DMSOAligned.sortedByCoord.out.bam > ./BEDs/DMSO_GBO.bed;
+
+bedtools bamtobed -i p300iAligned.sortedByCoord.out.bam > ./BEDs/p300i_GBO.bed;
+
+cd BEDs;
+
+cat DMSO_GBO.bed | awk -F $'\t' 'BEGIN {OFS = FS}{ if ($6 == "+") {$2 = $2 + 4} else if ($6 == "-") {$3 = $3 - 5} print $0}' >| DMSO_GBO_tn5_pe.bed;
+
+cat p300i_GBO.bed | awk -F $'\t' 'BEGIN {OFS = FS}{ if ($6 == "+") {$2 = $2 + 4} else if ($6 == "-") {$3 = $3 - 5} print $0}' >| p300i_GBO_tn5_pe.bed;
