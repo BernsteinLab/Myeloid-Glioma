@@ -1,0 +1,121 @@
+library(dplyr)
+library(Seurat)
+options(bitmapType='cairo')
+options(future.globals.maxSize = 8000 * 1024^2)
+
+
+
+DMSO1.data <- Read10X("DMSO1/")
+
+DMSO1 <- CreateSeuratObject(counts = DMSO1.data, project = "DMSO1", min.cells = 3, min.features = 200)
+
+DMSO1[["percent.mt"]] <- PercentageFeatureSet(DMSO1, pattern = "^MT.")
+
+
+DMSO2.data <- Read10X("DMSO2/")
+
+DMSO2 <- CreateSeuratObject(counts = DMSO2.data, project = "DMSO2", min.cells = 3, min.features = 200)
+
+DMSO2[["percent.mt"]] <- PercentageFeatureSet(DMSO2, pattern = "^MT.")
+
+
+
+DMSO3.data <- Read10X("DMSO3/")
+
+DMSO3 <- CreateSeuratObject(counts = DMSO3.data, project = "DMSO3", min.cells = 3, min.features = 200)
+
+DMSO3[["percent.mt"]] <- PercentageFeatureSet(DMSO3, pattern = "^MT.")
+
+
+
+Dex1.data <- Read10X("Dex1/")
+
+Dex1 <- CreateSeuratObject(counts = Dex1.data, project = "Dex1", min.cells = 3, min.features = 200)
+
+Dex1[["percent.mt"]] <- PercentageFeatureSet(Dex1, pattern = "^MT.")
+
+
+Dex2.data <- Read10X("Dex2/")
+
+Dex2 <- CreateSeuratObject(counts = Dex2.data, project = "Dex2", min.cells = 3, min.features = 200)
+
+Dex2[["percent.mt"]] <- PercentageFeatureSet(Dex2, pattern = "^MT.")
+
+
+Dex3.data <- Read10X("Dex3/")
+
+Dex3 <- CreateSeuratObject(counts = Dex3.data, project = "Dex3", min.cells = 3, min.features = 200)
+
+Dex3[["percent.mt"]] <- PercentageFeatureSet(Dex3, pattern = "^MT.")
+
+
+
+BWH911_GBO <- merge(DMSO1, y = c(DMSO2, DMSO3, Dex1, Dex2, Dex3), add.cell.ids = c("BWH911_GBO_DMSO1", "BWH911_GBO_DMSO2", "BWH911_GBO_DMSO3", "BWH911_GBO_Dex1", "BWH911_GBO_Dex2", "BWH911_GBO_Dex3"), project = "BWH911_GBO")
+
+
+pdf("BWH911_GBO_QC_BF.pdf", height = 6, width = 20)
+VlnPlot(BWH911_GBO, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+dev.off()
+
+BWH911_GBO <- subset(BWH911_GBO, subset = nFeature_RNA > 500 & nFeature_RNA < 6000 & nCount_RNA > 1000 & percent.mt < 15)
+
+
+pdf("BWH911_GBO_QC_AF.pdf", height = 6, width = 20)
+VlnPlot(BWH911_GBO, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+dev.off()
+
+library(sctransform)
+BWH911_GBO <- SCTransform(BWH911_GBO, vars.to.regress = "percent.mt", verbose = TRUE)
+BWH911_GBO <- RunPCA(BWH911_GBO)
+pdf("BWH911_GBO_ElbowPlot.pdf", height = 6, width = 6)
+ElbowPlot(BWH911_GBO, ndims=50)
+dev.off()
+
+write.table(BWH911_GBO@meta.data, file="BWH911_GBO_Integrated_MetaData.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+Treatment <- scan("Treatment.txt", what="")
+
+BWH911_GBO@meta.data$Treatment <- Treatment
+
+
+
+BWH911_GBO <- RunUMAP(BWH911_GBO, reduction = "pca", dims = 1:15)
+BWH911_GBO <- FindNeighbors(BWH911_GBO, dims = 1:15)
+BWH911_GBO <- FindClusters(BWH911_GBO, resolution = 0.3)
+
+pdf("BWH911_GBO_UMAP_Clusters.pdf", height= 6, width = 7)
+DimPlot(BWH911_GBO, reduction = "umap")
+dev.off()
+
+pdf("BWH911_GBO_Clusters_With_Labels.pdf", height= 6, width = 7)
+DimPlot(BWH911_GBO, reduction = "umap", label=TRUE)
+dev.off()
+
+pdf("BWH911_GBO_UMAP_PatientID.pdf", height= 6, width = 9)
+DimPlot(BWH911_GBO, reduction = "umap", group.by="orig.ident")
+dev.off()
+
+pdf("BWH911_GBO_UMAP_Treatment.pdf", height= 6, width = 9)
+DimPlot(BWH911_GBO, reduction = "umap", group.by="Treatment")
+dev.off()
+
+
+write.table(BWH911_GBO@meta.data, file="BWH911_GBO_Integrated_MetaData.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+s.genes <- cc.genes$s.genes
+g2m.genes <- cc.genes$g2m.genes
+
+BWH911_GBO <- CellCycleScoring(BWH911_GBO, s.features = s.genes, g2m.features = g2m.genes, set.ident = FALSE)
+
+
+write.table(BWH911_GBO@meta.data, file="BWH911_GBO_All_MetaData.txt", sep="\t", col.names=NA, quote=FALSE)
+
+Matrix <- GetAssayData(object = BWH911_GBO, slot = "counts")
+
+write.table(as.matrix(Matrix), file="./BWH911_GBO_Raw_Counts.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+
+saveRDS(BWH911_GBO, file="BWH911_GBO_Glioma.rds")
