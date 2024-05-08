@@ -1,0 +1,133 @@
+library(dplyr)
+library(Seurat)
+options(bitmapType='cairo')
+options(future.globals.maxSize = 8000 * 1024^2)
+
+
+Y25.data <- Read10X("Y25/Solo.out/Gene/raw/")
+
+Y25 <- CreateSeuratObject(counts = Y25.data, project = "Y25", min.cells = 3, min.features = 200)
+
+Y25[["percent.mt"]] <- PercentageFeatureSet(Y25, pattern = "^MT.")
+
+
+
+Y40.data <- Read10X("Y40/Solo.out/Gene/raw/")
+
+Y40 <- CreateSeuratObject(counts = Y40.data, project = "Y40", min.cells = 3, min.features = 200)
+
+Y40[["percent.mt"]] <- PercentageFeatureSet(Y40, pattern = "^MT.")
+
+Normal_Brain <- merge(Y25, y = Y40, add.cell.ids = c("Y25", "Y40"), project = "Normal_Brain")
+
+
+pdf("Normal_Brain_QC_BF.pdf", height = 6, width = 20)
+VlnPlot(Normal_Brain, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+dev.off()
+
+Normal_Brain <- subset(Normal_Brain, subset = nFeature_RNA > 500 & nFeature_RNA < 6000 & nCount_RNA > 1000 & percent.mt < 15)
+
+
+pdf("Normal_Brain_QC_AF.pdf", height = 6, width = 20)
+VlnPlot(Normal_Brain, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+dev.off()
+
+library(sctransform)
+Normal_Brain <- SCTransform(Normal_Brain, vars.to.regress = "percent.mt", verbose = TRUE)
+Normal_Brain <- RunPCA(Normal_Brain)
+pdf("Normal_Brain_ElbowPlot.pdf", height = 6, width = 6)
+ElbowPlot(Normal_Brain, ndims=50)
+dev.off()
+
+write.table(Normal_Brain@meta.data, file="Normal_Brain_Integrated_MetaData.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+
+Normal_Brain <- RunUMAP(Normal_Brain, reduction = "pca", dims = 1:14)
+Normal_Brain <- FindNeighbors(Normal_Brain, dims = 1:14)
+Normal_Brain <- FindClusters(Normal_Brain, resolution = 0.3)
+
+pdf("Normal_Brain_UMAP_Clusters.pdf", height= 6, width = 7)
+DimPlot(Normal_Brain, reduction = "umap")
+dev.off()
+
+pdf("Normal_Brain_Clusters_With_Labels.pdf", height= 6, width = 7)
+DimPlot(Normal_Brain, reduction = "umap", label=TRUE)
+dev.off()
+
+pdf("Normal_Brain_UMAP_Age.pdf", height= 6, width = 9)
+DimPlot(Normal_Brain, reduction = "umap", group.by="orig.ident")
+dev.off()
+
+
+write.table(Normal_Brain@meta.data, file="Normal_Brain_Integrated_MetaData.txt", sep="\t", col.names=NA, quote=FALSE)
+
+all.genes <- rownames(Normal_Brain)
+
+DefaultAssay(Normal_Brain) <- "RNA"
+Normal_Brain <- NormalizeData(Normal_Brain)
+Normal_Brain <- ScaleData(Normal_Brain, features = all.genes)
+tumor.markers <- FindAllMarkers(Normal_Brain, only.pos = TRUE, logfc.threshold=0.25, test.use= "roc")
+write.table(tumor.markers, file="Normal_Brain_Clusters_AUC.txt", sep="\t", col.names=NA, quote=FALSE)
+
+tumor.markers.DGE <- FindAllMarkers(Normal_Brain, only.pos = TRUE, logfc.threshold=0.25)
+write.table(tumor.markers.DGE, file="Normal_Brain_Clusters_DGE.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+write.table(Normal_Brain@meta.data, file="Normal_Brain_Integrated_MetaData.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+s.genes <- cc.genes$s.genes
+g2m.genes <- cc.genes$g2m.genes
+
+Normal_Brain <- CellCycleScoring(Normal_Brain, s.features = s.genes, g2m.features = g2m.genes, set.ident = FALSE)
+
+
+write.table(Normal_Brain@meta.data, file="Normal_Brain_TAM_All_MetaData.txt", sep="\t", col.names=NA, quote=FALSE)
+
+saveRDS(Normal_Brain, file="25_40_Years_Normal_Brain.rds")
+
+
+########### Clusters annotated based on DGE ##########
+
+astro <- subset(x = Normal_Brain, idents = c("2","9"))
+
+astro.data <- as.matrix(GetAssayData(object = astro, slot="counts"))
+
+write.table(astro.data, file="./Normal_Astro.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+astro <- subset(x = Normal_Brain, idents = c("2","9"))
+
+astro.data <- as.matrix(GetAssayData(object = astro, slot="counts"))
+
+write.table(astro.data, file="./Normal_Astro.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+
+
+IN <- subset(x = Normal_Brain, idents = c("3","4","5","8"))
+
+IN.data <- as.matrix(GetAssayData(object = IN, slot="counts"))
+
+write.table(IN.data, file="./Normal_IN.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+
+
+PN <- subset(x = Normal_Brain, idents = c("0","1"))
+
+PN.data <- as.matrix(GetAssayData(object = PN, slot="counts"))
+
+write.table(PN.data, file="./Normal_PN.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+############ Cells IDs from from PN, IN, astro are included in the Cells text File ########
+
+Cells <- scan("Discrete_Normal_Full.txt", what="")
+
+Discrete <- subset(x = Normal_Brain, cells = Cells)
+
+Discrete.data <- as.matrix(GetAssayData(object = Discrete, slot="counts"))
+
+write.table(Discrete.data, file="./Discrete4_Normal_Brain_Raw_Expression.txt", sep="\t", col.names=NA, quote=FALSE)
