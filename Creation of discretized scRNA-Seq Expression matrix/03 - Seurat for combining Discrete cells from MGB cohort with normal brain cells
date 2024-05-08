@@ -1,0 +1,144 @@
+####### We extracted a discretized matrix of MGB cells with the strongest expression of each tumor cell program, including each myeloid, T cell, and cancer programs, thus excluding intermediate cells. 
+
+####### For the outputs of Myeloid, Malignant, and T cell cNMFs, cells with a minimum 2.5-fold higher usage of a particular program over the second most used program were annotated with that program as a discrete cell. 
+
+####### For oligodendrocytes and vasculature, the usages from "all cell types" cNMF outputs were used to annotate Oligo or vasculature discrete cells. 
+
+####### Doublets, cycling programs, and cycling cells were excluded from the analysis. 
+
+############Inside R####################
+library(dplyr)
+library(Seurat)
+options(bitmapType='cairo')
+options(future.globals.maxSize = 8000 * 1024^2)
+
+######## This is a combined discrete scRNA-Seq expression matrix for the MGB Seq-Well cohort ########
+Glioma.data <- read.table("Discrete4_Full_Raw_Expression.txt", sep="\t", head=TRUE, row.names=1)
+
+######## Published libraries from previous step 
+Normal_Brain.data <- read.table("Discrete4_Normal_Brain_Raw_Expression.txt", sep="\t", head=TRUE, row.names=1)
+
+
+Glioma <- CreateSeuratObject(counts = Glioma.data, project = "Glioma", min.cells = 3, min.features = 200)
+
+Glioma[["percent.mt"]] <- PercentageFeatureSet(Glioma, pattern = "^MT.")
+
+
+Normal_Brain <- CreateSeuratObject(counts = Normal_Brain.data, project = "Normal_Brain", min.cells = 3, min.features = 200)
+
+Normal_Brain[["percent.mt"]] <- PercentageFeatureSet(Normal_Brain, pattern = "^MT.")
+
+
+Discrete4 <- merge(Glioma, y = Normal_Brain, add.cell.ids = c("Glioma", "Normal_Brain"), project = "Discrete")
+
+pdf("Discrete4_QC_BF.pdf", height = 6, width = 20)
+VlnPlot(Discrete4, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+dev.off()
+
+Discrete4 <- subset(Discrete4, subset = nFeature_RNA > 500 & nFeature_RNA < 6000 & nCount_RNA > 1000 & percent.mt < 15)
+
+
+pdf("Discrete4_QC_AF.pdf", height = 6, width = 20)
+VlnPlot(Discrete4, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+dev.off()
+
+library(sctransform)
+Discrete4 <- SCTransform(Discrete4, vars.to.regress = "percent.mt", verbose = TRUE)
+Discrete4 <- RunPCA(Discrete4)
+pdf("Discrete4_ElbowPlot.pdf", height = 6, width = 6)
+ElbowPlot(Discrete4, ndims=50)
+dev.off()
+
+write.table(Discrete4@meta.data, file="Discrete4_Integrated_MetaData.txt", sep="\t", col.names=NA, quote=FALSE)
+
+Annotation <- scan("Annotation.txt", what="")
+IDH_Status <- scan("IDH_Status.txt", what="")
+
+Discrete4@meta.data$Annotation <- Annotation
+
+Discrete4@meta.data$IDH_Status <- IDH_Status
+
+Discrete4 <- RunUMAP(Discrete4, reduction = "pca", dims = 1:23)
+Discrete4 <- FindNeighbors(Discrete4, dims = 1:23)
+Discrete4 <- FindClusters(Discrete4, resolution = 0.3)
+
+pdf("Discrete4_UMAP_Clusters.pdf", height= 6, width = 7)
+DimPlot(Discrete4, reduction = "umap")
+dev.off()
+
+pdf("Discrete4_Clusters_With_Labels.pdf", height= 6, width = 7)
+DimPlot(Discrete4, reduction = "umap", label=TRUE)
+dev.off()
+
+pdf("Discrete4_UMAP_Annotation.pdf", height= 6, width = 15)
+DimPlot(Discrete4, reduction = "umap", group.by="Annotation", label=TRUE)
+dev.off()
+
+
+pdf("Discrete4_UMAP_IDH_Status.pdf", height= 6, width = 9)
+DimPlot(Discrete4, reduction = "umap", group.by="IDH_Status", label=TRUE)
+dev.off()
+
+
+write.table(Discrete4@meta.data, file="Discrete4_Integrated_MetaData.txt", sep="\t", col.names=NA, quote=FALSE)
+
+all.genes <- rownames(Discrete4)
+
+DefaultAssay(Discrete4) <- "RNA"
+Discrete4 <- NormalizeData(Discrete4)
+Discrete4 <- ScaleData(Discrete4, features = all.genes)
+
+
+s.genes <- cc.genes$s.genes
+g2m.genes <- cc.genes$g2m.genes
+
+Discrete4 <- CellCycleScoring(Discrete4, s.features = s.genes, g2m.features = g2m.genes, set.ident = FALSE)
+
+
+write.table(Discrete4@meta.data, file="Discrete4_Final_MetaData.txt", sep="\t", col.names=NA, quote=FALSE)
+
+saveRDS(Discrete4, file="Discrete4_New_Classification.rds")
+
+rownames(Discrete4)
+
+umap <- Embeddings(object = Discrete4, reduction = "umap")
+
+write.table(umap, file="Discrete4_Glioma_UMAP.txt", sep="\t", col.names=NA, quote=FALSE)
+
+library(SCOPfunctions)
+
+Matrix <- GetAssayData(Discrete4, slot = "data")
+
+Matrix2 <- utils_big_as.matrix(Matrix, n_slices_init = 5, verbose = T)
+
+write.table(Matrix2, file="./Discrete4_Normalized_Matrix.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+DefaultAssay(Discrete4) <- "RNA"
+
+Idents(object = Discrete4) <- Discrete4@meta.data$Annotation
+
+tumor.markers2 <- FindAllMarkers(Discrete4, only.pos = TRUE, logfc.threshold=0.25, test.use= "roc", group.by="Annotation")
+
+write.table(tumor.markers2, file="./Discrete4_SeqWell_WT_Mutant_Tumors_Clusters_AUC_Based_On_Annotation.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+tumor.markers <- FindAllMarkers(Discrete4, only.pos = TRUE, logfc.threshold=0.25, group.by="Annotation")
+
+write.table(tumor.markers, file="./Discrete4_SeqWell_WT_Mutant_Tumors_Clusters_DEG_Based_On_Annotation.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+Discrete4.data <- GetAssayData(object = Discrete4, slot="counts")
+
+Discrete4.data2 <- utils_big_as.matrix(Discrete4.data, n_slices_init = 5, verbose = T)
+
+write.table(Discrete4.data2, file="./Discrete4_Matrix_SeqWell_Glioma_10X_Normal_Brain_Raw_Counts.txt", sep="\t", col.names=NA, quote=FALSE)
+
+write.table(colnames(Discrete4.data2), file="./Discrete4_Annotation.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+Genes <- scan("Human_Surface_Markers.txt", what="")
+
+Matrix3 <- Matrix2[rownames(Matrix2) %in% Genes,]
+
+write.table(Matrix3, file="./Discrete4_Normalized_Matrix_Surface_Markers.txt", sep="\t", col.names=NA, quote=FALSE)
