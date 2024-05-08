@@ -1,0 +1,3 @@
+java -Xmx50g -jar PICARD MarkDuplicates I=DMSOAligned.sortedByCoord.out.bam O=./dup/DMSOAligned.sortedByCoord.out.bam M=./dup/DMSOAligned.sortedByCoord.txt REMOVE_DUPLICATES=TRUE;
+
+java -Xmx50g -jar PICARD MarkDuplicates I=p300iAligned.sortedByCoord.out.bam O=./dup/p300iAligned.sortedByCoord.out.bam M=./dup/p300iAligned.sortedByCoord.txt REMOVE_DUPLICATES=TRUE;
