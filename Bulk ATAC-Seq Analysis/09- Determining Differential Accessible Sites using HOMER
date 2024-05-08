@@ -1,0 +1,19 @@
+###### Made the xls output of macs2 compatible with HOMER ###########
+
+###### Merging peaks of DMSO and p300i into one file ###########
+
+mergePeaks -d given DMSO_GBO_Ready_peaks.bed p300i_GBO_Ready_peaks.bed > GBO_Myeloid_Peaks_Merged.bed
+
+
+####### Creating Tag Directories using the bed files with corrected loci ########
+
+makeTagDirectory ./TagDirectories/DMSO_GBO/ -format bed DMSO_GBO_tn5_pe.bed
+
+makeTagDirectory ./TagDirectories/p300i_GBO/ -format bed p300i_GBO_tn5_pe.bed
+
+
+####### Differential peak analysis ##########
+
+getDifferentialPeaks /seq/epiprod02/Chadi/Glioblastoma/Bulk_ATAC/GBO_p300i/filter/sorted_filter/dup/BEDs/macs2_pk/Merge_Peaks/GBO_Myeloid_Peaks.bed ./TagDirectories/p300i_GBO/ ./TagDirectories/DMSO_GBO/ -F 2 > ./Upregulated_in_p300i.txt
+
+getDifferentialPeaks /seq/epiprod02/Chadi/Glioblastoma/Bulk_ATAC/GBO_p300i/filter/sorted_filter/dup/BEDs/macs2_pk/Merge_Peaks/GBO_Myeloid_Peaks.bed ./TagDirectories/DMSO_GBO/ ./TagDirectories/p300i_GBO/ -F 2 > ./Upregulated_in_DMSO.txt
