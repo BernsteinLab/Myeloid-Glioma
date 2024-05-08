@@ -1,0 +1,116 @@
+####### Discrete Scavenger, Complement, Tissue Resident and Systemic myeloid cells were extracted and their IDs placed in the Cells text files shown below
+
+############################ Inside R ############################
+
+library(dplyr)
+library(Seurat)
+options(bitmapType='cairo')
+options(future.globals.maxSize = 8000 * 1024^2)
+
+
+
+DefaultAssay(Discrete4) <- "RNA"
+
+
+Matrix <- GetAssayData(Discrete4, slot = "counts")
+
+
+Cells2 <- scan("Cells_For_Scenic.txt", what="")
+
+SCENIC <- Matrix[,colnames(Matrix) %in% Cells2]
+
+write.table(as.matrix(SCENIC), file="Discrete_Suppressive_Inflammatory_Myeloid_For_SCENIC.txt", sep="\t", quote=FALSE, col.names=NA)
+
+
+DefaultAssay(Discrete4) <- "RNA"
+
+
+Matrix <- GetAssayData(Discrete4, slot = "counts")
+
+Cells <- scan("Cells_For_COMET.txt", what="")
+
+Myeloid <- subset(Discrete4, cells= Cells)
+
+all.genes <- rownames(Myeloid)
+
+
+pdf("Discrete4_Myeloid_Suppressive_QC_AF.pdf", height = 6, width = 20)
+VlnPlot(Myeloid, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+dev.off()
+
+library(sctransform)
+Myeloid <- SCTransform(Myeloid, vars.to.regress = "percent.mt", verbose = TRUE)
+Myeloid <- RunPCA(Myeloid)
+pdf("Discrete4_Myeloid_Suppressive_ElbowPlot.pdf", height = 6, width = 6)
+ElbowPlot(Myeloid, ndims=50)
+dev.off()
+
+write.table(Myeloid@meta.data, file="Discrete4_Myeloid_Suppressive_Integrated_MetaData.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+
+Myeloid <- RunUMAP(Myeloid, reduction = "pca", dims = 1:16)
+Myeloid <- FindNeighbors(Myeloid, dims = 1:16)
+Myeloid <- FindClusters(Myeloid, resolution = 0.3)
+pdf("Discrete4_Myeloid_Suppressive_UMAP_Clusters.pdf", height= 6, width = 7)
+DimPlot(Myeloid, reduction = "umap")
+dev.off()
+
+pdf("Discrete4_Myeloid_Suppressive_Clusters_With_Labels.pdf", height= 6, width = 7)
+DimPlot(Myeloid, reduction = "umap", label=TRUE)
+dev.off()
+
+pdf("Discrete4_Myeloid_Suppressive_UMAP_Patient_ID.pdf", height= 6, width = 9)
+DimPlot(Myeloid, reduction = "umap", group.by="orig.ident")
+dev.off()
+
+
+pdf("Discrete4_Myeloid_Suppressive_UMAP_IDH_Status.pdf", height= 6, width = 7)
+DimPlot(Myeloid, reduction = "umap", group.by="IDH_Status")
+dev.off()
+
+
+pdf("Discrete4_Myeloid_Suppressive_UMAP_Annotation.pdf", height= 6, width = 7)
+DimPlot(Myeloid, reduction = "umap", group.by="Annotation")
+dev.off()
+
+
+pdf("Discrete4_Myeloid_Suppressive_UMAP_Annotation_Labelled.pdf", height= 6, width = 7)
+DimPlot(Myeloid, reduction = "umap", group.by="Annotation", label=TRUE)
+dev.off()
+
+
+
+DefaultAssay(Myeloid) <- "RNA"
+Myeloid <- NormalizeData(Myeloid)
+Myeloid <- ScaleData(Myeloid, features = all.genes)
+
+
+write.table(Myeloid@meta.data, file="Discrete4_Myeloid_Suppressive_All_MetaData.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+
+library(SCOPfunctions)
+
+Matrix <- GetAssayData(Myeloid, slot = "data")
+
+Matrix2 <- as.matrix(Matrix)
+
+write.table(Matrix2, file="./Discrete4_Myeloid_Suppressive_Normalized_Matrix.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+umap2 <- Embeddings(object = Myeloid, reduction = "umap")
+
+write.table(umap2, file="Discrete4_Myeloid_Suppressive_UMAP.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+Matrix <- GetAssayData(Myeloid, slot = "data")
+
+Genes <- scan("Human_Surface_Markers.txt", what="")
+
+data2 <- Matrix[rownames(Matrix) %in% Genes,]
+
+
+data2 <- as.matrix(data2)
+
+write.table(data2, file="./Discrete4_Myeloid_Suppressive_Normalized_Matrix_Human_Surface_Markers.txt", sep="\t", col.names=NA, quote=FALSE)
