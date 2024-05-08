@@ -1,0 +1,75 @@
+library(dplyr)
+library(Seurat)
+options(bitmapType='cairo')
+options(future.globals.maxSize = 8000 * 1024^2)
+
+
+MGH253_GBO.data <- read.table("MGH253_GBO_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH253_GBO <- CreateSeuratObject(counts = MGH253_GBO.data, project = "MGH253_GBO", min.cells = 3, min.features = 200)
+MGH253_GBO[["percent.mt"]] <- PercentageFeatureSet(MGH253_GBO, pattern = "^MT.")
+
+MGH314_GBO.data <- read.table("MGH314_GBO_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH314_GBO <- CreateSeuratObject(counts = MGH314_GBO.data, project = "MGH314_GBO", min.cells = 3, min.features = 200)
+MGH314_GBO[["percent.mt"]] <- PercentageFeatureSet(MGH314_GBO, pattern = "^MT.")
+
+MGH630_GBO.data <- read.table("MGH630_GBO_Cleaned_Raw_Expression.txt", head=TRUE, row.names=1, sep="\t")
+MGH630_GBO <- CreateSeuratObject(counts = MGH630_GBO.data, project = "MGH630_GBO", min.cells = 3, min.features = 200)
+MGH630_GBO[["percent.mt"]] <- PercentageFeatureSet(MGH630_GBO, pattern = "^MT.")
+
+var3 <- intersect(rownames(MGH253_GBO), rownames(MGH314_GBO))
+
+all.genes <- intersect(var3, rownames(MGH630_GBO))
+
+
+GBO.combined <- merge(MGH253_GBO, y = c(MGH314_GBO, MGH630_GBO), add.cell.ids = c("MGH253_GBO", "MGH314_GBO", "MGH630_GBO"), project = "GBO")
+
+
+pdf("SeqWell_GBO_QC_AF.pdf", height = 6, width = 20)
+VlnPlot(GBO.combined, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+dev.off()
+
+library(sctransform)
+GBO.combined <- SCTransform(GBO.combined, vars.to.regress = "percent.mt", verbose = TRUE)
+GBO.combined <- RunPCA(GBO.combined)
+pdf("SeqWell_GBO_ElbowPlot.pdf", height = 6, width = 6)
+ElbowPlot(GBO.combined, ndims=50)
+dev.off()
+
+write.table(GBO.combined@meta.data, file="SeqWell_GBO_Integrated_MetaData.txt", sep="\t", col.names=NA, quote=FALSE)
+
+
+GBO.combined <- RunUMAP(GBO.combined, reduction = "pca", dims = 1:20)
+GBO.combined <- FindNeighbors(GBO.combined, dims = 1:20)
+GBO.combined <- FindClusters(GBO.combined, resolution = 0.3)
+pdf("SeqWell_GBO_UMAP_Clusters.pdf", height= 6, width = 7)
+DimPlot(GBO.combined, reduction = "umap")
+dev.off()
+
+pdf("SeqWell_GBO_Clusters_With_Labels.pdf", height= 6, width = 7)
+DimPlot(GBO.combined, reduction = "umap", label=TRUE)
+dev.off()
+
+pdf("SeqWell_GBO_UMAP_Patient_ID.pdf", height= 6, width = 9)
+DimPlot(GBO.combined, reduction = "umap", group.by="orig.ident")
+dev.off()
+
+Treatment <- scan("Treatment.txt", what="")
+
+GBO.combined@meta.data$Treatment <- Treatment
+
+pdf("SeqWell_GBO_UMAP_Treatment.pdf", height= 6, width = 9)
+DimPlot(GBO.combined, reduction = "umap", group.by="Treatment")
+dev.off()
+
+write.table(GBO.combined@meta.data, file="SeqWell_GBO_Integrated_MetaData.txt", sep="\t", col.names=NA, quote=FALSE)
+
+s.genes <- cc.genes$s.genes
+g2m.genes <- cc.genes$g2m.genes
+
+GBO.combined <- CellCycleScoring(GBO.combined, s.features = s.genes, g2m.features = g2m.genes, set.ident = FALSE)
+
+Matrix <- GetAssayData(object = GBO.combined, slot = "counts")
+
+write.table(as.matrix(Matrix), file="./GBO_DMSO_GNE_Raw_Counts.txt", sep="\t", col.names=NA, quote=FALSE)
+
+saveRDS(GBO.combined, file="GBO_DMSO_GNE_Glioma.rds")
