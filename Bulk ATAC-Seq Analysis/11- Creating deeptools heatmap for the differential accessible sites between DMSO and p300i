@@ -1,0 +1,5 @@
+
+computeMatrix reference-point -S DMSO_GBO.bw p300i_GBO.bw -R Upregulated_in_DMSO.bed Upregulated_in_p300i.bed -b 1000 -a 1000 --skipZeros --smartLabels -o Bulk_ATAC_GBO_Differential_Peaks_Center.gz --referencePoint center;
+
+
+plotHeatmap -m Bulk_ATAC_GBO_Differential_Peaks_Center.gz -o Bulk_ATAC_GBO_Differential_Peaks_Center_Better_Pipeline.pdf --startLabel 5 --endLabel 3 --whatToShow "heatmap and colorbar" --colorMap Blues --outFileSortedRegions Bulk_ATAC_GBO_Differential_Peaks_Center.bed;
