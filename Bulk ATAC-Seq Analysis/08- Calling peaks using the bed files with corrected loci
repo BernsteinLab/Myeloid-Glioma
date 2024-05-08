@@ -1,0 +1,3 @@
+macs2 callpeak -t DMSO_GBO_tn5_pe.bed -g hs -f BED -q 0.01 --nomodel --shift -75 --extsize 150 --keep-dup all -B --SPMR --outdir macs2_pk -n DMSO_GBO;
+
+macs2 callpeak -t p300i_GBO_tn5_pe.bed -g hs -f BED -q 0.01 --nomodel --shift -75 --extsize 150 --keep-dup all -B --SPMR --outdir macs2_pk -n p300i_GBO;
