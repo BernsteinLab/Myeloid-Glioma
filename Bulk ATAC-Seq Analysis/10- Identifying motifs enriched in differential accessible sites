@@ -1,0 +1,74 @@
+####### Made the outputs of getDifferentialPeaks compatible with rtracklayer::import option #######
+
+R;
+
+############################ Inside R ##############################
+library(monaLisa)
+library(GenomicRanges)
+library(SummarizedExperiment)
+library(JASPAR2024)
+library(TFBSTools)
+library(BSgenome.Hsapiens.UCSC.hg38)
+library(ComplexHeatmap)
+library(circlize)
+
+
+
+DMSO <- rtracklayer::import(con = "Upregulated_in_DMSO.bed", format = "bed")
+
+p300i <- rtracklayer::import(con = "Upregulated_in_p300i.bed", format = "bed")
+
+
+
+Peaks <- c(DMSO, p300i)
+
+Peaks2 <- trim(resize(Peaks, width = median(width(Peaks)), fix = "center"))
+summary(width(Peaks2))
+
+
+bins2 <- rep(c("DMSO", "p300i"), c(length(DMSO), length(p300i)))
+
+desired_order <- c("DMSO", "p300i")
+
+bins2 <- factor(bins2, levels = desired_order)
+
+table(bins2)
+
+Peakseqs <- getSeq(BSgenome.Hsapiens.UCSC.hg38, Peaks2)
+
+
+
+db <- file.path(system.file("extdata", package="JASPAR2024"), 
+                    "JASPAR2024.sqlite")
+opts <- list()
+opts[["tax_group"]] <- "vertebrates"
+opts[["matrixtype"]] <- "PWM"
+opts[["collection"]] <- "CORE"
+pwms <- getMatrixSet(db, opts)
+
+
+hg38 <- Hsapiens
+
+
+se2 <- calcBinnedMotifEnrR(seqs = Peakseqs, bins = bins2, pwmL = pwms, background = "genome", genome = hg38, genome.oversample = 50)
+
+
+Motifs <- scan("Motif_OIbulk.txt", what="")
+
+seSel2 <- se2[Motifs, ]
+
+pdf("Bulk_ATAC_DMSO_p300i_LISA_Heatmap.pdf", height=18, width=40)
+plotMotifHeatmaps(x = seSel2, which.plots = c("log2enr", "negLog10Padj"), 
+                  width = 4, cluster = FALSE, maxEnr = 2, maxSig = 300,
+                  show_dendrogram = TRUE, show_seqlogo = TRUE,
+                  width.seqlogo = 1.75, show_motif_GC = TRUE)
+dev.off()
+
+
+matrix_pvalue <- assay(se2, "negLog10Padj")
+write.table(matrix_pvalue, file="Bulk_ATAC_GBO_LISA_Motifs_log10pvalues.txt", col.names=NA, sep="\t", quote=FALSE)
+
+
+
+background_matrix <- assay(se2, "log2enr")
+write.table(background_matrix, file="Bulk_ATAC_GBO_LISA_Motifs_Enrichment.txt", col.names=NA, sep="\t", quote=FALSE)
