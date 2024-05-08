@@ -1,0 +1,35 @@
+########## We extracted the myeloid cells from the output of all cell types usage as follows: 
+########## The usage scores for 4 myeloid programs were summed to create the “myeloid usage” per cell ('Microglia', 'CD14_Mono', 'cDC', 'Neutrophils'). Other categoris are also summed (i.e. 'AC', 'NPC1_OPC', 'MES2', 'MES1', 'NPC2', 'Giant_Cell_GBM', as Malignant).
+########## Cells were then annotated as one of the cell types using the top scoring usage for cell type category. Myeloid cells had the highest myeloid usage.
+
+############### Python Scripts #####################
+
+X = pd.read_table("GBO_DMSO_GNE_Raw_Counts.txt", index_col=0, sep='\t')
+
+X2 = X.T
+
+H = pd.read_table("Myeloid_NMF_Average_Gene_Spectra.txt", sep="\t", index_col=0)
+
+H2 = H.T
+
+X3 = X2.filter(items = H2.columns)
+
+H3 = H2.filter(items = X3.columns)
+
+H4 = H3.to_numpy()
+      
+X4 = X3.values
+
+X5 = X4.astype(np.float64)
+
+test = sklearn.decomposition.non_negative_factorization(X5, W=None, H=H4, n_components= 14, init='random', update_H=False, solver='cd', beta_loss='frobenius', tol=0.0001, max_iter=1000, alpha=0.0, alpha_W=0.0, alpha_H='same', l1_ratio=0.0, regularization=None, random_state=None, verbose=0, shuffle=False)
+
+test2 = list(test)
+
+processed = pd.DataFrame(test2[0], columns= H.columns, index=X3.index)
+
+row_sums = processed.sum(axis=1)
+
+processed_data = (processed.div(row_sums, axis=0) * 100)
+
+processed_data.to_csv(path_or_buf="./GBO_DMSO_GNE_Myeloid_Programs_Usages.txt", sep="\t", quoting=csv.QUOTE_NONE)
