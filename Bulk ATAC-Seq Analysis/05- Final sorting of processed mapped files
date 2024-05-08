@@ -1,0 +1,3 @@
+samtools sort -o sorted_filter/DMSOAligned.sortedByCoord.out.bam DMSOAligned.sortedByCoord.out.bam;
+
+samtools sort -o sorted_filter/p300iAligned.sortedByCoord.out.bam p300iAligned.sortedByCoord.out.bam;
