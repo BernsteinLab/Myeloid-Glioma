@@ -16,4 +16,4 @@ makeTagDirectory ./TagDirectories/p300i_GBO/ -format bed p300i_GBO_tn5_pe.bed
 
 getDifferentialPeaks GBO_Myeloid_Peaks_Merged.bed ./TagDirectories/p300i_GBO/ ./TagDirectories/DMSO_GBO/ -F 2 > ./Upregulated_in_p300i.txt
 
-getDifferentialPeaks GBO_Myeloid_Peaks.bed ./TagDirectories/DMSO_GBO/ ./TagDirectories/p300i_GBO/ -F 2 > ./GBO_Myeloid_Peaks_Merged.bed
+getDifferentialPeaks GBO_Myeloid_Peaks_Merged.bed ./TagDirectories/DMSO_GBO/ ./TagDirectories/p300i_GBO/ -F 2 > ./Upregulated_in_DMSO.txt
