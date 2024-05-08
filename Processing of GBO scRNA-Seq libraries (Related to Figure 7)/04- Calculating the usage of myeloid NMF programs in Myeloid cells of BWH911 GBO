@@ -1,5 +1,5 @@
 ########## We extracted the myeloid cells from the output of all cell types usage as follows: 
-########## The usage scores for 4 myeloid programs were summed to create the “myeloid usage” per cell. Other categoris are also summed.
+########## The usage scores for 4 myeloid programs were summed to create the “myeloid usage” per cell ('Microglia', 'CD14_Mono', 'cDC', 'Neutrophils'). Other categoris are also summed (i.e. 'AC', 'NPC1_OPC', 'MES2', 'MES1', 'NPC2', 'Giant_Cell_GBM', as Malignant).
 ########## Cells were then annotated as one of the cell types using the top scoring usage for cell type category. Myeloid cells had the highest myeloid usage.
 
 ############### Python Scripts #####################
