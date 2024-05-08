@@ -1,0 +1,5 @@
+for file in *.bam;do samtools index $file;done
+
+bamCoverage -b DMSOAligned.sortedByCoord.out.bam --extendReads --normalizeUsing RPGC --effectiveGenomeSize 2747877702 -o ./BW/DMSO_GBO.bw;
+
+bamCoverage -b p300iAligned.sortedByCoord.out.bam --extendReads --normalizeUsing RPGC --effectiveGenomeSize 2747877702 -o ./BW/p300i_GBO.bw;
