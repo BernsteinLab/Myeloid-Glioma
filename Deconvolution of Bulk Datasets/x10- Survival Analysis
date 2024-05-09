@@ -10,7 +10,7 @@
 
 ######### We converted the survival time to years 
 
-######### "GLASS_GSAM_Survival_Module_Scores_WT4_Normalized.txt" include the normalized values and OS time
+######### "GLASS_GSAM_Survival_Module_Scores_WT4_Normalized_For_Looping.txt" include the normalized values and OS time
 
 df <- read.table("GLASS_GSAM_Survival_Module_Scores_WT4_Normalized_For_Looping.txt", sep="\t", row.names=1, head=TRUE)
 
