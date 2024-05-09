@@ -12,31 +12,104 @@
 
 ######### "GLASS_GSAM_Survival_Module_Scores_WT4_Normalized.txt" include the normalized values and OS time
 
+df <- read.table("GLASS_GSAM_Survival_Module_Scores_WT4_Normalized_For_Looping.txt", sep="\t", row.names=1, head=TRUE)
+
+library(dplyr)
 library(survival)
 library(lubridate)
 library(ggsurvfit)
 library(gtsummary)
 library(tidycmprsk)
-library(condsurv)
+library(condSURV)
 library(survminer)
 
 
-data <- read.table("GLASS_GSAM_Survival_Module_Scores_WT4_Normalized.txt", head=TRUE, sep="\t")
+col_names <- colnames(df)
+
+# Loop through columns 4-24
+for (i in 4:24) {
+  # Extract data for the current column
+  current_column <- col_names[i]
+  current_data <- df[, c(1:3, i)]
+  
+  # Order the data in descending order based on the current column
+  current_data <- current_data[order(-current_data[, 4]), ]
+  
+  # Keep top 63 and bottom 63 rows
+  top_rows <- head(current_data, 63)
+  bottom_rows <- tail(current_data, 63)
+  
+  # Convert values in top 63 rows to 'High' and bottom 63 rows to 'Low' in the current column
+  top_rows[, current_column] <- "High"
+  bottom_rows[, current_column] <- "Low"
+  
+  # Merge the top and bottom rows
+  final_data <- rbind(top_rows, bottom_rows)
+  
+  # Save the final data to a file
+  file_name <- paste0(current_column, "_Survival.txt")
+  write.table(final_data, file = file_name, sep = "\t", quote = FALSE, row.names = TRUE, col.names=NA)
+}
 
 
-####### Survival Analysis for RHOB Inflammatory #######
+# Create an empty data frame to store results
+results <- data.frame(Variable_Name = character(), Coefficient_Value = numeric())
 
-Cutpoint <- surv_cutpoint(data, time = "Survival", event = "Event", "Inflamm_Microglia.1", minprop = 0.3, progressbar = TRUE)
+# Get a list of files ending with "_Survival.txt" in the current directory
+file_list <- list.files(pattern = "_Survival.txt")
 
-test <- surv_categorize(Cutpoint, variables = "Inflamm_Microglia.1", labels = c("low", "high"))
+# Loop through each file
+for (file in file_list) {
+  # Read the data
+  data <- read.table(file, header=TRUE, sep="\t")
+  
+  # Extract the name of the 5th column
+  variable_name <- colnames(data)[5]
+  
+  # Construct formula for survival analysis
+  formula_str <- paste("Surv(Survival, Event) ~", variable_name)
+  
+  # Perform survival analysis
+  s1 <- survfit(as.formula(formula_str), data = data)
+  
+  # Plot survival curves
+  plot_survival <- survfit2(as.formula(formula_str), data = data) %>% 
+    ggsurvfit(linewidth=1.5) +
+    labs(
+      x = "Years",
+      y = "Overall survival probability"
+    ) + 
+    add_risktable() + xlim(0, 5) + scale_color_manual(values=c("black", "grey")) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"), axis.title.x  = element_text(family = "Arial", size=12), axis.title.y  = element_text(family = "Arial", size=12), axis.text.x  = element_text(family = "Arial", size=12), axis.text.y = element_text(family = "Arial", size=12)) 
+  
+  # Fit Cox proportional hazards model
+  cox <- coxph(as.formula(formula_str), data = data)
+  
+  # Get the coefficient value and store it in the results data frame
+  coefficient_value <- summary(cox)$coefficients[, 5]
+  results <- rbind(results, data.frame(Variable_Name = variable_name, Coefficient_Value = coefficient_value))
+  
+  # Print summary statistics
+  print(summary(cox)$coefficients[, 5])
+}
+
+# Print the results data frame
+print(results)
+
+write.table(results, file="Survival_pvalues_Our_Study_GeneSets.txt", sep="\t", quote=FALSE, col.names=NA)
+
+
+
+data <- read.table("Scavenger_Survival.txt", head=TRUE, sep="\t")
 
 
 Surv(data$Survival, data$Event)
 
+test = data
 
 s1 <- survfit(Surv(Survival, Event) ~ 1, data = test)
 
-survfit2(Surv(Survival, Event) ~ Inflamm_Microglia.1, data = test) %>% 
+
+survfit2(Surv(Survival, Event) ~ Scavenger, data = test) %>% 
   ggsurvfit(linewidth=1.5) +
   labs(
     x = "Years",
@@ -44,79 +117,4 @@ survfit2(Surv(Survival, Event) ~ Inflamm_Microglia.1, data = test) %>%
   ) + 
   add_risktable() + xlim(0, 5) + scale_color_manual(values=c("black", "grey")) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"), axis.title.x  = element_text(family = "Arial", size=12), axis.title.y  = element_text(family = "Arial", size=12), axis.text.x  = element_text(family = "Arial", size=12), axis.text.y = element_text(family = "Arial", size=12)) 
 
-
-coxph(Surv(Survival, Event) ~ Inflamm_Microglia.1, data = test) %>% tbl_regression(exp = TRUE) 
-
-
-####### Survival Analysis for Scavenger Immunosuppressive #######
-
-
-Cutpoint <- surv_cutpoint(data, time = "Survival", event = "Event", "Scavenger.1", minprop = 0.3, progressbar = TRUE)
-
-test <- surv_categorize(Cutpoint, variables = "Scavenger.1", labels = c("low", "high"))
-
-Surv(data$Survival, data$Event)
-
-
-s1 <- survfit(Surv(Survival, Event) ~ 1, data = test)
-
-survfit2(Surv(Survival, Event) ~ Scavenger.1, data = test) %>% 
-  ggsurvfit(linewidth=1.5) +
-  labs(
-    x = "Years",
-    y = "Overall survival probability"
-  ) + 
-  add_risktable() + xlim(0, 5) + scale_color_manual(values=c("black", "grey")) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"), axis.title.x  = element_text(family = "Arial", size=12), axis.title.y  = element_text(family = "Arial", size=12), axis.text.x  = element_text(family = "Arial", size=12), axis.text.y = element_text(family = "Arial", size=12)) 
-
-
-coxph(Surv(Survival, Event) ~ Scavenger.1, data = test) %>% tbl_regression(exp = TRUE) 
-
-
-####### Survival Analysis for Complement Immunosuppressive #######
-
-
-Cutpoint <- surv_cutpoint(data, time = "Survival", event = "Event", "Complement_Immunosuppressive.1", minprop = 0.3, progressbar = TRUE)
-
-test <- surv_categorize(Cutpoint, variables = "Complement_Immunosuppressive.1", labels = c("low", "high"))
-
-
-Surv(data$Survival, data$Event)
-
-
-s1 <- survfit(Surv(Survival, Event) ~ 1, data = test)
-
-survfit2(Surv(Survival, Event) ~ Complement_Immunosuppressive.1, data = test) %>% 
-  ggsurvfit(linewidth=1.5) +
-  labs(
-    x = "Years",
-    y = "Overall survival probability"
-  ) + 
-  add_risktable() + xlim(0, 5) + scale_color_manual(values=c("black", "grey")) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"), axis.title.x  = element_text(family = "Arial", size=12), axis.title.y  = element_text(family = "Arial", size=12), axis.text.x  = element_text(family = "Arial", size=12), axis.text.y = element_text(family = "Arial", size=12)) 
-
-
-coxph(Surv(Survival, Event) ~ Complement_Immunosuppressive.1, data = test) %>% tbl_regression(exp = TRUE) 
-
-
-####### Survival Analysis for IL1B inflammatory #######
-
-
-Cutpoint <- surv_cutpoint(data, time = "Survival", event = "Event", "IL1B_Inflamm.1", minprop = 0.3, progressbar = TRUE)
-
-test <- surv_categorize(Cutpoint, variables = "IL1B_Inflamm.1", labels = c("low", "high"))
-
-
-Surv(data$Survival, data$Event)
-
-
-s1 <- survfit(Surv(Survival, Event) ~ 1, data = test)
-
-survfit2(Surv(Survival, Event) ~ IL1B_Inflamm.1, data = test) %>% 
-  ggsurvfit(linewidth=1.5) +
-  labs(
-    x = "Years",
-    y = "Overall survival probability"
-  ) + 
-  add_risktable() + xlim(0, 5) + scale_color_manual(values=c("black", "grey")) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"), axis.title.x  = element_text(family = "Arial", size=12), axis.title.y  = element_text(family = "Arial", size=12), axis.text.x  = element_text(family = "Arial", size=12), axis.text.y = element_text(family = "Arial", size=12)) 
-
-
-coxph(Surv(Survival, Event) ~ IL1B_Inflamm.1, data = test) %>% tbl_regression(exp = TRUE)
+coxph(Surv(Survival, Event) ~ Scavenger, data = test) %>% tbl_regression(exp = TRUE)
