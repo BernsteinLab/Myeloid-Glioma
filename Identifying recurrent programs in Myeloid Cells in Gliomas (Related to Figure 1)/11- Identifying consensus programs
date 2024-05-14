@@ -1,1 +1,8 @@
-Need input from Martin
+####### E3, is the obtained by merging the gene spectra outputs of the three cohorts #######
+
+library(jacpop)
+library(lsa)
+
+Cos <- cosine(E3)
+
+Cosine_dist <- as.dist(1-Cos)
