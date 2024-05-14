@@ -1,0 +1,28 @@
+######## Inside R #########
+
+library(ggplot2)
+library(scatterpie)
+
+# example for 1 sample
+
+sample = 'UKF265_C'
+csvdir = file.path(envdir, sprintf('env%s.csv',sample))
+data_ <- read.csv(csvdir)
+
+pdf(file.path(plotdir, sprintf('%s.sp.pdf',sample) ))
+ggplot() + geom_scatterpie(aes(x=x, y=y, r=50), 
+                           data=data_, 
+                           cols=colnames(data_)[c(1:6)],
+                           color=NA) + 
+  coord_equal() + 
+  scale_fill_manual(values = c('#b3b3b3','#050505','#f5f3ed','#0098d5','#e62c54','#ffe700')) +
+  theme(panel.grid.major = element_blank(), 
+                        panel.grid.minor = element_blank(), 
+                        panel.background = element_blank(),
+                        axis.text.x=element_blank(),
+                        axis.ticks.x=element_blank(),
+                        axis.text.y=element_blank(),  
+                        axis.ticks.y=element_blank()
+  ) +
+  labs(x="", y="")
+dev.off()
