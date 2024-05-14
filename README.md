@@ -25,9 +25,9 @@ The folder **"Figure 1 Visualizations"** includes the necessary scripts and inst
 The folder **"MAESTER"** includes the necessary scripts to trace the origin of the myeloid cells in the glioma-microenvironment, as shown in Figure 2 of the manuscript. This folder contains all the codes and instructions required to process the MAESTER libraries fastqs, align them, generate single-cell mitochondrial mutations matrices & depth matrices, pseudobulking these matrices, determine mutations of interest, and measure the enrichment of the mutations of interest in several myeloid identities to trace origins. Codes to generate the visualizations shown in Figure 2 are also included in this folder. The "Required Files" folder contains additional files for running these codes.
 
 
-## Spatial Transcriptomic (Related to Figure 3):
+## Spatial Transcriptomics (Related to Figure 3):
 
-The folder **"Spatial_transcripts"** includes the necessary scripts to deconvolve the transcriptomic images into two different representations: niches and cell contents. Niches are obtained unbiasedly using cNMF, while cell content is deconvolved into the states present in the discrete scRNA-seq using RCTD. The relationship of niches and cells states is then measured though correlations. The spatial relationship of the cells and that of the niches is determined using spatially-informed regressions (see Methods).
+The folder **"Spatial_transcriptomics"** includes the necessary scripts to deconvolve the transcriptomic images into two different representations: niches and cell contents. Niches are obtained unbiasedly using cNMF, while cell content is deconvolved into the states present in the discrete scRNA-seq using RCTD. The relationship of niches and cells states is then measured though correlations. The spatial relationship of the cells and that of the niches is determined using spatially-informed regressions (see Methods).
 
 
 ## Discretinize the MGB cohort gene expression matrix (Related to Figure 4):
