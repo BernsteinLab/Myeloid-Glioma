@@ -4,6 +4,15 @@
 
 ############### Python Scripts #####################
 
+import sklearn
+import sklearn.decomposition
+from sklearn.decomposition import non_negative_factorization
+import numpy as np
+import scanpy as sc
+import csv
+import scipy
+import pandas as pd
+
 X = pd.read_table("BWH911_GBO_Raw_Counts.txt", index_col=0, sep='\t')
 
 X2 = X.T
