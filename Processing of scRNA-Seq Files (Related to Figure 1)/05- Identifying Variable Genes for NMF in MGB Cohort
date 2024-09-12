@@ -37,14 +37,19 @@ Var <- HVFInfo(object = Tumors.combined, selection.method="vst", assay = "RNA")
 
 write.table(Var, file="SeqWell_Full_Gene_List_Variable_Score.txt", sep="\t", quote=FALSE, col.names=NA)
 
-########## Identified top 4000 variable genes and saved them in a text file as a list "Variable_Genes_SeqWell.txt" (one gene per row) #################
+########## Identified top 3000 variable genes #################
 
-Variable_Genes <- scan("Variable_Genes_SeqWell.txt", what="")
+Var <- HVFInfo(object = Myeloid, selection.method="vst", assay = "RNA")
+
+Var3 <- Var[order(Var$variance.standardized, decreasing = TRUE),]
+
+Var4 <- Var3[c(1:3000),]
+
 
 Matrix <- as.matrix(GetAssayData(Tumors.combined, slot = "counts"))
 
 
-SeqWell3 <- Matrix[rownames(Matrix) %in% Variable_Genes,]
+SeqWell3 <- Matrix[rownames(Matrix) %in% rownames(Var4),]
 
 write.table(t(SeqWell3), file="SeqWell_Matrix_Filtered_For_NMF.txt", sep="\t", quote=FALSE, col.names=NA)
 
