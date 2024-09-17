@@ -14,4 +14,3 @@ cnmf consensus --output-dir ./results --name spatial --components 7 --local-dens
 
 ########## The cnmf consensus script outputs usage matrix which is normalized per row to percentages (in each cell, the usages of the programs sums up to 100) ################
 ########## The gene spectra score matrix is used for the annotation of the programs #############
-########## The first round was used to identify cells using programs that are not myeloid in nature (i.e. different cell type iden
