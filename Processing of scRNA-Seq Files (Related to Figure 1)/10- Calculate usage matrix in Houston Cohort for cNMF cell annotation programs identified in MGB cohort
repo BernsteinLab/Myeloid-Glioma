@@ -7,7 +7,7 @@ options(future.globals.maxSize = 8000 * 1024^2)
 Matrix <- GetAssayData(object = Tumors.combined, slot = "counts")
 
 
-########## This loads the genes that were used in the overall MGB cNMF (Top 4000 variable genes) ###########
+########## This loads the genes that were used in the overall MGB cNMF (Top 3000 variable genes) ###########
 Genes <- scan("./cnmf_run.overdispersed_genes.txt", what="")
 
 Matrix2 <- Matrix[rownames(Matrix) %in% Genes,]
