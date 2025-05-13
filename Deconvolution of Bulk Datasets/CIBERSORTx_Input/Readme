@@ -1,1 +1,3 @@
-Inputs for CIBERSORTx
+Inputs for CIBERSORTx:
+
+"Discrete_LowR_Cells.txt" is required for step 5 "5- Preparing CIBERSORTx single cell reference matrix".
